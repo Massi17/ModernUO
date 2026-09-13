@@ -57,6 +57,25 @@ Non devi ripetermi nulla del contesto: ho le decisioni salvate in memoria persis
 - Aprire Claude Code dentro `C:\Users\massi\Documents\GitHub\ModernUO`.
 - Dirmi in breve cosa vuoi fare (nuova feature, sync upstream, fix, ecc).
 
+## 7. Skill Claude Code attive su questo PC
+
+Ho attivato queste skill di ModernUO (da `dev-docs/claude-skills/`) per lavorare meglio sul contenuto custom:
+
+- `modernuo-code-audit` — controllo automatico convenzioni ad ogni modifica `.cs`
+- `modernuo-content-patterns` — pattern per Item/Mobile/Creature
+- `modernuo-serialization` — persistenza dello stato
+- `modernuo-timers` — azioni ritardate, spawn, effetti a tempo
+
+**Attenzione:** `.claude/` è nel `.gitignore` di ModernUO, quindi questa attivazione **non si sincronizza** col push/pull del repo — vale solo su questo PC. Se un giorno lavori da un'altra macchina, chiedimi di rifare l'attivazione (comando rapido):
+
+```sh
+for name in modernuo-code-audit modernuo-content-patterns modernuo-serialization modernuo-timers; do
+  mkdir -p ".claude/skills/$name" && cp "dev-docs/claude-skills/$name.md" ".claude/skills/$name/SKILL.md"
+done
+```
+
+Le altre skill disponibili in `dev-docs/claude-skills/` (gump, spell/era, quest/eventi, regioni, networking, ecc.) le attivo al volo quando il task specifico le richiede, senza bisogno che tu me lo chieda.
+
 ## Checklist rapida prima di ogni commit
 
 - [ ] Il codice nuovo è in `Projects/UOContent/Custom/`? (se è davvero nuovo)
