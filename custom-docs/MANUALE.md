@@ -2,6 +2,10 @@
 
 Guida pratica per te: dove mettere il codice, come tracciare le modifiche, come comportarti con git. Il "perché" delle scelte è in [`specs/2026-09-13-modernuo-fork-sync-design.md`](specs/2026-09-13-modernuo-fork-sync-design.md); qui trovi solo il "cosa fare".
 
+## 0. Prima di scrivere codice: ragiona sulla "teoria"
+
+Per sistemi nuovi o complessi (armature, armi, classi, skill, spell, effetti...), non si parte dal codice. Si ragiona prima in [`custom-docs/design/`](design/README.md): un file per sistema, dove elaboriamo insieme decisioni, tabelle, alternative e trade-off. Solo quando la teoria è stabile si passa all'implementazione. Dimmi semplicemente "voglio ragionare su [sistema]" per iniziare.
+
 ## 1. Dove va il codice
 
 **Regola d'oro: chiediti sempre "sto aggiungendo qualcosa di nuovo, o sto modificando qualcosa che esiste già?"**
