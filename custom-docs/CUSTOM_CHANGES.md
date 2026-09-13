@@ -6,4 +6,4 @@ Ogni riga qui sotto aiuta, ad ogni sync con l'upstream, a capire quali modifiche
 
 | File | Motivo | Data |
 |---|---|---|
-| _(nessuna modifica ancora)_ | | |
+| `Projects/UOContent/Spells/Seventh/FlameStrike.cs` | Prova: `BlocksMovement => false` per rendere lo spell castabile in movimento (stesso pattern già usato da tutti gli spell di Chivalry) | 2026-09-13 |

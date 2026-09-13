@@ -21,6 +21,8 @@ namespace Server.Spells.Seventh
 
         public override bool DelayedDamage => true;
 
+        public override bool BlocksMovement => false;
+
         public void Target(Mobile m)
         {
             if (CheckHSequence(m))

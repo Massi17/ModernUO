@@ -54,14 +54,18 @@ Dimmi semplicemente "controlliamo gli aggiornamenti upstream" (o simile). Io:
 
 Non c'è una cadenza fissa: lo facciamo quando vuoi tu.
 
-## 6. Riprendere il lavoro in una nuova sessione
+## 6. Lavori non ancora conclusi
+
+Un lavoro non è "finito" solo perché il codice è scritto e compila — lo è quando l'hai verificato e me lo confermi. Finché non succede, resta tracciato in [`custom-docs/LAVORI_IN_CORSO.md`](LAVORI_IN_CORSO.md): cosa è stato fatto, cosa manca, stato attuale. Consultalo a inizio sessione per sapere cosa è rimasto in sospeso.
+
+## 7. Riprendere il lavoro in una nuova sessione
 
 Non devi ripetermi nulla del contesto: ho le decisioni salvate in memoria persistente. Ti basta:
 
 - Aprire Claude Code dentro `C:\Users\massi\Documents\GitHub\ModernUO`.
 - Dirmi in breve cosa vuoi fare (nuova feature, sync upstream, fix, ecc).
 
-## 7. Skill Claude Code attive su questo PC
+## 8. Skill Claude Code attive su questo PC
 
 Ho attivato queste skill di ModernUO (da `dev-docs/claude-skills/`) per lavorare meglio sul contenuto custom:
 
