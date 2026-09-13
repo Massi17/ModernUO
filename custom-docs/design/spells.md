@@ -18,6 +18,15 @@
 4. Lo spell concreto (es. `MagicArrowSpell.OnCast()`) tipicamente apre un target (`SpellTarget<Mobile>`) e nel callback (`Target(m)`) applica l'effetto vero: danno (`SpellHelper.Damage(...)`, `GetNewAosDamage(...)`), buff/debuff (vedi il design `effects.md` per il meccanismo `BuffInfo`), evocazioni, teleport, ecc. — più effetti visivi/sonori (`MovingParticles`, `PlaySound`).
 5. Ogni spell leaf è minimale: eredita da `MagerySpell` (o dalla base della propria scuola), definisce `_info` statico, override di `Circle`, `OnCast()`, e la logica dell'effetto — vedi `Spells/First/MagicArrow.cs` come esempio canonico (≈70 righe totali).
 
+**La macchina a stati del cast (`SpellState`: `None` → `Casting` → `Sequencing` → `None`):**
+- **`Casting`**: dalla chiamata a `Cast()` fino allo scadere del `CastTimer` (durata = `GetCastDelay()`, scalata da Faster Casting — cap 2 per Magery/Necromancy, 4 per altre skill, -2 col Protection spell attivo, -1 fisso in Stygian Abyss). Interrompibile (vedi Disturb sotto). In questo stato parte anche `AnimTimer` (rianima le mani ogni 1.5s) e le mani vengono liberate (disarma temporaneamente le armi).
+- **`Sequencing`**: dal termine del `CastTimer` (che imposta subito `NextSpellTime = ora + GetCastRecovery()`, il "Faster Cast Recovery") fino al completamento di `CheckSequence()` — tipicamente il tempo in cui il client aspetta la selezione del bersaglio. Non più interrompibile da un colpo subito.
+- **`None`**: nessuno spell attivo.
+
+**Il personaggio si blocca durante il cast? Sì, di default — con un'eccezione nota.** `Spell.BlocksMovement` (default: `IsCasting`, cioè vero solo nello stato `Casting`) viene controllato da `Mobile.CanMove()` (`Projects/Server/Mobiles/Mobile.cs:4135`): se vero, il **server rifiuta il movimento**, non è solo un vincolo visivo lato client. Lo stesso flag blocca anche i colpi con arma mentre si casta (controllato in `BaseWeapon.cs:844` e `BaseRanged.cs:57`). Il blocco si toglie automaticamente appena si passa a `Sequencing` — si può quindi camminare mentre si aspetta di selezionare il bersaglio, dopo che la barra di cast è finita. **Eccezione già implementata:** tutti gli spell di Chivalry (`Spells/Chivalry/*.cs`) sovrascrivono `BlocksMovement => false` — i Paladini possono muoversi durante il cast, fedele alle regole classiche di UO. È un pattern riusabile: per rendere una skill/scuola custom "castabile in movimento" basta override di quella property, nessuna modifica a `Spell.cs`.
+
+**Interruzione (`Disturb`):** un colpo subito durante `Casting` (`OnCasterHurt`) ha una probabilità di interrompere il cast, resistibile con lo spell Protection attivo (più alto il livello, meno probabile l'interruzione). Se scatta: i timer si fermano, si applica una penalità di recovery (`GetDisturbRecovery()`, solo pre-AoS — in AoS è zero), messaggio "concentrazione disturbata". Una volta in `Sequencing`, il colpo non interrompe più.
+
 **Vincoli/insidie note — determinano cosa è facile vs difficile:**
 
 | Modifica | Fattibilità | Note |
