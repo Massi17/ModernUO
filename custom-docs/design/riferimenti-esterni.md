@@ -42,3 +42,11 @@ Prima di copiare un pattern trovato online (ServUO/RunUO) dentro questo fork di 
 ## Note
 
 Ricerca svolta il 2026-09-13, mentre si attendeva la verifica in gioco di una modifica di prova (Flame Strike castabile in movimento). Alcune fonti (RunUO Wiki, Grokipedia) hanno risposto HTTP 403 al fetch automatico e andrebbero riconsultate da browser se servono davvero.
+
+## Verifica esterna aggiuntiva (2026-09-13)
+
+**ServUO ha aggiornato il proprio stack .NET — aggiornamento rilevante rispetto a quanto scritto sopra.** Il repo ufficiale ([github.com/ServUO/ServUO](https://github.com/ServUO/ServUO)) risulta ora su **.NET 10** (istruzioni d'installazione con `dotnet-sdk-10.0`/`dotnet-runtime-10.0`), con ultimo aggiornamento registrato il 1° giugno 2026 — non è più fermo al vecchio .NET Framework storicamente associato a RunUO/ServUO. **Questo restringe il divario tecnico con ModernUO** (entrambi ora su .NET 10), ma le differenze architetturali documentate sopra restano presumibilmente valide e non riverificate in questa sessione: ServUO mantiene comunque `Serialize`/`Deserialize` manuali (nessuna evidenza di adozione di source-generator) e la struttura a cartella `/Scripts` flat (nessun cambiamento trovato). L'aggiornamento .NET da solo non implica che le regole di threading/concorrenza di ModernUO si applichino anche a ServUO — verificarlo con codice reale se mai servisse un confronto più preciso.
+
+**Vita-Nex: Core — confermato ancora attivo/mantenuto nel 2026**, non solo un riferimento storico: thread recenti sul forum ServUO (es. discussioni su "Build 57.4", luglio 2026) mostrano attività continua della community attorno alla libreria.
+
+**Non raggiungibili anche in questo secondo tentativo:** RunUO Wiki (`runuo.net/wiki`) e Grokipedia (`grokipedia.com/page/ServUO_Scripting`) — entrambi ancora HTTP 403. Se servono davvero, vanno aperti da un browser reale, non via fetch automatico.

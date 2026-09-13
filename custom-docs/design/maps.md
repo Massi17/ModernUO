@@ -41,7 +41,7 @@ L'utente ha fornito una ricerca dettagliata esterna sul livello "file del client
 | **CentrED+** | Editor mappa/statics client-server multi-utente, fork mantenuto di CentrED |
 | **CentrED#** | Riscrittura C#/.NET moderna e cross-platform di CentrED — permette di costruire una mappa da zero (già trovato/confermato in ricerca precedente) |
 | **UO Landscaper / Dragon** | Generano il terreno da un'immagine BMP dipinta a mano, poi si rifinisce in CentrED |
-| **TerrainLab** | Genera un set MUL strutturalmente valido ma vuoto (nessun asset EA), da riempire con arte propria |
+| **TerrainLab** ⚠️ non confermato — vedi "Verifica esterna" sotto | Genera un set MUL strutturalmente valido ma vuoto (nessun asset EA), da riempire con arte propria |
 | **Pandora's Box** | Assistente da staff in-game |
 | **Region Editor / UO Architect** | Editor di regioni / costruzione in-game |
 
@@ -75,3 +75,19 @@ Distribuire ai giocatori un client con file modificati è prassi comune negli sh
 - [github.com/kaczy93/centredsharp](https://github.com/kaczy93/centredsharp) e [kaczy93.github.io/centredsharp](https://kaczy93.github.io/centredsharp/) — raggiungibili, pagina del sito povera di dettagli tecnici (rimanda alla wiki GitHub per i formati file, non consultata in questa sessione)
 - Verifica diretta nel codice: `Projects/Server/Maps/MapLoader.cs`, `Distribution/Data/map-definitions.json`, `Projects/Server/Configuration/ServerSettings.cs`, `Projects/Server/Main.cs` (`FindDataFile`), `Projects/Server/TileMatrix/TileMatrix.cs` (repo ModernUO), `src/ClassicUO.Assets/MapLoader.cs`, `src/ClassicUO.Client/Configuration/Settings.cs` (repo ClassicUO) — non solo ricerca web, confermato leggendo l'implementazione reale
 - Ricerca esterna fornita direttamente dall'utente (2026-09-13): riepilogo dettagliato su struttura file client UO, tool della community, workflow e trappole comuni — verificata dov'era verificabile nel nostro codice (vedi sezione dedicata sopra)
+
+## Verifica esterna aggiuntiva (2026-09-13)
+
+Controllo incrociato via ricerca web sui punti non verificabili nel nostro codice.
+
+**Stato attuale dei tool (aggiornamento rispetto alla tabella sopra):**
+- **CentrED# è confermato lo strumento consigliato oggi**, non solo "un'alternativa" — sviluppo attivo (722 commit, v0.6.11.30 del 7 febbraio 2026), cross-platform vero (Windows/Linux/macOS incluso Apple Silicon), nessuna dipendenza legacy FreePascal/Lazarus. Riscrittura completa, non un fork.
+- **Nuovo strumento trovato, non nella nostra lista originale: [ShardTinkerer/UOStudio](https://github.com/ShardTinkerer/UOStudio)** — un'altra riscrittura completa dell'editor CentrED/CentrED+ di StaticZ, più recente. Da tenere d'occhio come possibile alternativa a CentrED#, non ancora confrontata in dettaglio.
+- **CentrED+ (StaticZ)** — il codice originale vive su `git.aksdb.de` (branch `CentrED+` del repo di aksdb); risulta il ramo storico, meno attivo di CentrED#. **Caveat trovato in un thread ServUO:** CentrED+ supporta UOP ma ha problemi con alcune versioni di UOP che hanno introdotto blocchi dati extra nei file mappa — un motivo tecnico in più per preferire CentrED# oggi.
+- **UO Landscaper e DragonMod** — confermati ancora scaricabili (non più sviluppati attivamente, ma preservati): [UO Tools Archive](https://uo.wzk.cz/) li ospita entrambi (UO Landscaper v1.4 "Manawydan"; DragonMod fino a "IMod13"). Nota: questo archivio è stato migrato a Hugo/Cloudflare Pages a marzo 2026, con tutti i download/URL originali preservati — quindi resta un punto di riferimento affidabile anche oggi.
+- **TerrainLab — NON trovato in questa ricerca.** Nessun risultato lo conferma con questo nome esatto; potrebbe essere un tool poco documentato, rinominato, o riferito in modo impreciso nella ricerca originale. Da non dare per scontato finché non si trova una fonte diretta.
+- **Vita-Nex: Core — confermato ancora attivo nella community nel 2026** (thread recenti su servuo.dev, es. discussioni su "Build 57.4" a luglio 2026).
+
+**Range versione client (7.0.20–7.0.50) — confermato, con dettaglio in più:** è ancora il consenso della community per l'editing di mappe con CentrED. Sfumatura trovata: per lo sviluppo generale (non solo mappe) il range utile si estende fino a circa **7.0.59**; per **remake dei multi** (case/navi) è specificamente consigliata la **7.0.36**. Confermato anche che **`multicollection.uop` non è ancora stato decrittato completamente** — è la ragione per cui il ciclo UOP→MUL→UOP resta necessario, anche con tool moderni come CentrED#.
+
+**Non verificabile:** Grokipedia (`grokipedia.com/page/ServUO_Scripting`) e RunUO Wiki (`runuo.net/wiki`) restano entrambi HTTP 403 al fetch automatico anche in questo secondo tentativo — invariato rispetto alla ricerca precedente.
