@@ -8,6 +8,8 @@ Appunti e ragionamenti sui sistemi di gioco custom, elaborati *prima* di scriver
 - [`skills.md`](skills.md)
 - [`spells.md`](spells.md)
 - [`effects.md`](effects.md)
+- [`maps.md`](maps.md) — mappe/facet custom
+- [`riferimenti-esterni.md`](riferimenti-esterni.md) — risorse esterne (ServUO, community UO shard scripting)
 
 Aggiungine altri quando serve — un nuovo sistema, un nuovo file.
 
@@ -20,6 +22,7 @@ Questo progetto userà come base **[ClassicUO](https://github.com/ClassicUO/Clas
 - `skills-ui.md` — l'elenco skill NON è hardcoded lato client (il server può inviarlo via packet), ma **ModernUO non implementa ancora** l'invio di quel packet (vedi nota in `skills.md` qui sopra)
 - `spells-ui.md` — hook pronto (`SpellDefinition.FullIndexSetModifySpell`) per registrare spell custom senza toccare file esistenti
 - `effects-ui.md` — buff bar estendibile via file di config esterno (`buff.txt`), effetti visivi già liberi (il client non ha una tabella di mappatura, prende l'ID che manda il server)
+- `animations.md` — **eccezione alla regola "il client custom risolve tutto"**: le animazioni custom richiedono patchare gli archivi client con una pipeline di tool esterni datati (Mulpatcher/UOAnim/Michelangelo), non un semplice file sciolto — riusare un Body esistente resta invece facile
 
 ## Come si usa
 
