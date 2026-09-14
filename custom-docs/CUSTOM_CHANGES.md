@@ -7,4 +7,5 @@ Ogni riga qui sotto aiuta, ad ogni sync con l'upstream, a capire quali modifiche
 | File | Motivo | Data |
 |---|---|---|
 | `Projects/UOContent/Spells/Base/Spell.cs` | Add TargetFirst opt-in flag and its supporting members (ValidateTargetFirst, HasReagents, ConsumeCastingResources) - purely additive, no behavior change yet | 2026-09-14 |
+| Projects/UOContent/Spells/Base/Spell.cs | Cast() branches on TargetFirst: shows the target cursor immediately instead of after the cast delay, when a spell opts in | 2026-09-14 |
 | `Projects/UOContent/Spells/Seventh/FlameStrike.cs` | Prova: `BlocksMovement => false` per rendere lo spell castabile in movimento (stesso pattern già usato da tutti gli spell di Chivalry) | 2026-09-13 |

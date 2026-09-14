@@ -625,13 +625,46 @@ namespace Server.Spells
             {
                 var requiredMana = ScaleMana(GetMana());
 
-                if (Caster.Mana >= requiredMana)
+                if (Caster.Mana >= requiredMana && (!TargetFirst || HasReagents()))
                 {
                     if (Caster.Spell == null && Caster.CheckSpellCast(this) && CheckCast() &&
                         Caster.Region.OnBeginSpellCast(Caster, this))
                     {
                         State = SpellState.Casting;
                         Caster.Spell = this;
+
+                        if (TargetFirst)
+                        {
+                            if (!isWand && RevealOnCast)
+                            {
+                                Caster.RevealingAction();
+                            }
+
+                            if (Core.ML)
+                            {
+                                WeaponAbility.ClearCurrentAbility(Caster);
+                            }
+
+                            if (ClearHandsOnCast)
+                            {
+                                Caster.ClearHands();
+                            }
+
+                            Caster.Delta(MobileDelta.Flags); // Start paralyze
+
+                            OnBeginCast();
+
+                            var originalTarget = Caster.Target;
+
+                            OnCast(); // shows the target cursor immediately - no delay yet
+
+                            if (Caster.Player && Caster.Target != originalTarget)
+                            {
+                                Caster.Target?.BeginTimeout(Caster, 30000); // 30 seconds
+                            }
+
+                            return true;
+                        }
 
                         if (!isWand && RevealOnCast)
                         {
