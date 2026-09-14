@@ -74,31 +74,44 @@ public class SpellTarget<T> : Target, ISpellTarget<T> where T : class, IPoint3D
     /// the cost, unlike a phase-1 rejection. On success, resolution goes through the
     /// spell's own Target(), exactly like every other spell - that already deducts
     /// mana/reagents via CheckSequence(), so ConsumeCastingResources() must NOT also be
-    /// called on this path (it would double-charge).
+    /// called on this path (it would double-charge). This method also owns the spell's
+    /// teardown: OnTargetFinish() below deliberately skips FinishSequence() once the cast
+    /// is committed, so every exit path here must run it.
     /// </summary>
     private void ResolveTargetFirst(Spell spell, Mobile from, object o)
     {
-        if (o is IPoint2D p && Range >= 0 && !from.InRange(p, Range))
+        try
         {
-            spell.ConsumeCastingResources();
-            from.SendLocalizedMessage(500446); // That is too far away.
-            return;
-        }
+            // Resolution has begun - the cast is no longer "pending" for Disturb()'s or
+            // OnTargetFinish()'s purposes.
+            spell.EndTargetFirstCommitment();
 
-        if (CheckLOS && !from.InLOS(o))
+            if (o is IPoint2D p && Range >= 0 && !from.InRange(p, Range))
+            {
+                spell.ConsumeCastingResources();
+                from.SendLocalizedMessage(500446); // That is too far away.
+                return;
+            }
+
+            if (CheckLOS && !from.InLOS(o))
+            {
+                spell.ConsumeCastingResources();
+                from.SendLocalizedMessage(500237); // Target can not be seen.
+                return;
+            }
+
+            if (!spell.ValidateTargetFirst(o))
+            {
+                spell.ConsumeCastingResources(); // message already sent by ValidateTargetFirst
+                return;
+            }
+
+            _spell.Target(o as T);
+        }
+        finally
         {
-            spell.ConsumeCastingResources();
-            from.SendLocalizedMessage(500237); // Target can not be seen.
-            return;
+            spell.FinishSequence();
         }
-
-        if (!spell.ValidateTargetFirst(o))
-        {
-            spell.ConsumeCastingResources(); // message already sent by ValidateTargetFirst
-            return;
-        }
-
-        _spell.Target(o as T);
     }
 
     protected override void OnTargetOutOfLOS(Mobile from, object o)
@@ -113,5 +126,17 @@ public class SpellTarget<T> : Target, ISpellTarget<T> where T : class, IPoint3D
         from.Target.BeginTimeout(from, TimeoutTime - Core.TickCount);
     }
 
-    protected override void OnTargetFinish(Mobile from) => _spell?.FinishSequence();
+    protected override void OnTargetFinish(Mobile from)
+    {
+        if (_spell is Spell { TargetFirstCommitted: true })
+        {
+            // Resolution is deferred to ResolveTargetFirst, which runs later when
+            // the phase-2 cast delay finishes - calling FinishSequence() here would
+            // tear the spell down before that can happen (Target.Invoke calls this
+            // unconditionally, synchronously, right after OnTarget returns).
+            return;
+        }
+
+        _spell?.FinishSequence();
+    }
 }

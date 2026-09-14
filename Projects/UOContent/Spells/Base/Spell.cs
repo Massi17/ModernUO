@@ -32,9 +32,7 @@ namespace Server.Spells
         /// True once a <see cref="TargetFirst"/> spell's target has been picked and its
         /// cast delay has started (Disturb() charges mana/reagents past this point).
         /// </summary>
-#pragma warning disable CS0169
         private bool _targetFirstCommitted;
-#pragma warning restore CS0169
 
         public Spell(Mobile caster, Item scroll, SpellInfo info)
         {
@@ -431,7 +429,7 @@ namespace Server.Spells
                     // Phase 2 of a TargetFirst cast had already started (mantra/animation
                     // playing, delay counting down) - the caster is committed and pays the
                     // cost even though the spell never resolves.
-                    _targetFirstCommitted = false;
+                    EndTargetFirstCommitment();
                     ConsumeCastingResources();
                 }
                 else if (TargetFirst)
@@ -493,12 +491,30 @@ namespace Server.Spells
         public virtual bool ValidateTargetFirst(object target) => true;
 
         /// <summary>
+        /// True once a TargetFirst spell has committed to phase 2 (target picked, cast
+        /// delay running or a resolution outcome pending). SpellTarget{T}.OnTargetFinish
+        /// uses this to defer FinishSequence() past the normal end of Target.Invoke() -
+        /// otherwise the base Target class tears the spell down before the delayed
+        /// resolution can ever run.
+        /// </summary>
+        public bool TargetFirstCommitted => _targetFirstCommitted;
+
+        /// <summary>
+        /// Clears the phase-2 commitment flag. Called when a committed TargetFirst cast stops
+        /// being pending - either because resolution has begun (SpellTarget{T} calls this as it
+        /// enters ResolveTargetFirst) or because the cast was disturbed. Keeps every mutation of
+        /// <see cref="_targetFirstCommitted"/> outside <see cref="BeginTargetFirstDelay"/> in one
+        /// place.
+        /// </summary>
+        internal void EndTargetFirstCommitment() => _targetFirstCommitted = false;
+
+        /// <summary>
         /// Starts phase 2 of a TargetFirst cast: mantra, hand animation, and a cast-delay
         /// timer, exactly as a normal cast's Cast() would - just moved to after a target has
-        /// been picked instead of before. Marks the caster as committed (Disturb() charges
-        /// mana/reagents on any interruption from here on) and starts the cast-recovery clock.
-        /// When the delay finishes, State is set to Sequencing (required by CheckSequence())
-        /// and onResolve runs.
+        /// been picked instead of before. Marks the caster as committed, so Disturb() charges
+        /// mana/reagents on any interruption from here on. When the delay finishes, State is set
+        /// to Sequencing (required by CheckSequence()), the cast-recovery clock starts (that
+        /// happens in CastTimer, not here), and onResolve runs.
         /// </summary>
         public void BeginTargetFirstDelay(Action onResolve)
         {
@@ -692,7 +708,23 @@ namespace Server.Spells
             {
                 var requiredMana = ScaleMana(GetMana());
 
-                if (Caster.Mana >= requiredMana && (!TargetFirst || HasReagents()))
+                if (Caster.Mana < requiredMana)
+                {
+                    if (Caster.NetState?.IsKRClient != true && Caster.NetState?.Version >= ClientVersion.Version70654)
+                    {
+                        // Insufficient mana. You must have at least ~1_MANA_REQUIREMENT~ Mana to use this spell.
+                        Caster.LocalOverheadMessage(MessageType.Regular, 0x22, 502625, requiredMana.ToString());
+                    }
+                    else
+                    {
+                        Caster.LocalOverheadMessage(MessageType.Regular, 0x22, 502625); // Insufficient mana
+                    }
+                }
+                else if (TargetFirst && !HasReagents())
+                {
+                    Caster.LocalOverheadMessage(MessageType.Regular, 0x22, 502630); // More reagents are needed for this spell.
+                }
+                else
                 {
                     if (Caster.Spell == null && Caster.CheckSpellCast(this) && CheckCast() &&
                         Caster.Region.OnBeginSpellCast(Caster, this))
@@ -791,15 +823,6 @@ namespace Server.Spells
 
                         return true;
                     }
-                }
-                else if (Caster.NetState?.IsKRClient != true && Caster.NetState?.Version >= ClientVersion.Version70654)
-                {
-                    // Insufficient mana. You must have at least ~1_MANA_REQUIREMENT~ Mana to use this spell.
-                    Caster.LocalOverheadMessage(MessageType.Regular, 0x22, 502625, requiredMana.ToString());
-                }
-                else
-                {
-                    Caster.LocalOverheadMessage(MessageType.Regular, 0x22, 502625); // Insufficient mana
                 }
             }
 
@@ -1177,6 +1200,9 @@ namespace Server.Spells
                         caster.OnSpellCast(m_Spell);
                         caster.Region?.OnSpellCast(caster, m_Spell);
                         caster.NextSpellTime = Core.TickCount + (int)m_Spell.GetCastRecovery().TotalMilliseconds;
+
+                        caster.Delta(MobileDelta.Flags); // Update paralyze
+
                         _onResolve();
                     }
 
