@@ -50,6 +50,11 @@ public class SpellTarget<T> : Target, ISpellTarget<T> where T : class, IPoint3D
     {
         if (_spell is Spell { TargetFirst: true } spell)
         {
+            if (from.Spell != spell)
+            {
+                return; // this spell was disturbed/cancelled after the cursor appeared; ignore a stale click
+            }
+
             if (!spell.ValidateTargetFirst(o))
             {
                 return; // message already sent by ValidateTargetFirst; phase 1 stays free

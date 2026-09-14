@@ -12,3 +12,5 @@ Ogni riga qui sotto aiuta, ad ogni sync con l'upstream, a capire quali modifiche
 | `Projects/UOContent/Spells/Seventh/FlameStrike.cs` | Prova: `BlocksMovement => false` per rendere lo spell castabile in movimento (stesso pattern già usato da tutti gli spell di Chivalry) | 2026-09-13 |
 | Projects/UOContent/Spells/Seventh/FlameStrike.cs | Opt into TargetFirst casting (target cursor appears immediately, cast delay happens after target is picked) | 2026-09-14 |
 | Projects/UOContent/Spells/Targeting/SpellTarget.cs | OnTarget defers resolution for TargetFirst spells through Spell.BeginTargetFirstDelay instead of resolving instantly; re-validates range/LOS/validity when the delay finishes | 2026-09-14 |
+| Projects/UOContent/Spells/Base/Spell.cs | Fix: cancel a lingering TargetFirst phase-1 cursor on disturb; move OnSpellCast/NextSpellTime from click-time to resolution-time to match normal cast-recovery timing | 2026-09-15 |
+| Projects/UOContent/Spells/Targeting/SpellTarget.cs | Fix: guard against acting on a stale/disturbed TargetFirst spell instance on a delayed click | 2026-09-15 |

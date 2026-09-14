@@ -434,6 +434,15 @@ namespace Server.Spells
                     _targetFirstCommitted = false;
                     ConsumeCastingResources();
                 }
+                else if (TargetFirst)
+                {
+                    // Phase 1 of a TargetFirst cast: the cursor is up but no target has been
+                    // picked yet. Cancel it so a stale click can't resurrect this disturbed
+                    // spell instance - the SpellTarget<T>.OnTarget guard below is the actual
+                    // fix for that; this just makes the cursor disappear immediately instead
+                    // of lingering, clickable but inert, until it times out on its own.
+                    Target.Cancel(Caster);
+                }
             }
             else
             {
@@ -519,10 +528,6 @@ namespace Server.Spells
             }
 
             _targetFirstCommitted = true;
-
-            Caster.OnSpellCast(this);
-            Caster.Region?.OnSpellCast(Caster, this);
-            Caster.NextSpellTime = Core.TickCount + (int)GetCastRecovery().TotalMilliseconds;
 
             _castTimer = new CastTimer(this, castDelay, onResolve);
 
@@ -1169,6 +1174,9 @@ namespace Server.Spells
                     {
                         m_Spell.State = SpellState.Sequencing;
                         m_Spell._castTimer = null;
+                        caster.OnSpellCast(m_Spell);
+                        caster.Region?.OnSpellCast(caster, m_Spell);
+                        caster.NextSpellTime = Core.TickCount + (int)m_Spell.GetCastRecovery().TotalMilliseconds;
                         _onResolve();
                     }
 
