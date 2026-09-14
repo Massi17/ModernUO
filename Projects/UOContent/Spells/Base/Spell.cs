@@ -28,6 +28,14 @@ namespace Server.Spells
         private AnimTimer _animTimer;
         private CastTimer _castTimer;
 
+        /// <summary>
+        /// True once a <see cref="TargetFirst"/> spell's target has been picked and its
+        /// cast delay has started (Disturb() charges mana/reagents past this point).
+        /// </summary>
+#pragma warning disable CS0169
+        private bool _targetFirstCommitted;
+#pragma warning restore CS0169
+
         public Spell(Mobile caster, Item scroll, SpellInfo info)
         {
             Caster = caster;
@@ -446,6 +454,104 @@ namespace Server.Spells
         }
 
         public virtual bool CheckCast() => true;
+
+        /// <summary>
+        /// Opt-in alternate casting flow: the target cursor appears immediately when
+        /// <see cref="Cast"/> is called instead of after the cast delay, and the cast delay
+        /// happens after a target is picked instead of before. Default false leaves every
+        /// other spell in the game unchanged. See
+        /// custom-docs/specs/2026-09-14-target-first-casting-design.md.
+        /// </summary>
+        public virtual bool TargetFirst => false;
+
+        /// <summary>
+        /// For <see cref="TargetFirst"/> spells: is this target still valid? Called once when
+        /// the player clicks the cursor and again when the cast delay finishes (the target may
+        /// have died or otherwise become invalid in between). Default true means "no extra
+        /// check" - range and line of sight are already validated by the targeting system
+        /// itself and don't need to be repeated here. Override to reuse existing validity
+        /// checks (e.g. Caster.CanBeHarmful) - those already send their own message on failure.
+        /// </summary>
+        public virtual bool ValidateTargetFirst(object target) => true;
+
+        /// <summary>
+        /// Non-consuming sibling of <see cref="ConsumeReagents"/> - checks the same reagents
+        /// are available without removing them. Needed because a TargetFirst spell must reject
+        /// the cast (before showing the cursor at all) if it can't actually be paid for, since
+        /// its cost isn't deducted until later. Mirrors ConsumeReagents' own bypass rules
+        /// (scroll/wand in use, non-player caster, Lower Reagent Cost roll, free-consume duel
+        /// rule) so the two stay in agreement about what counts as "has reagents".
+        /// </summary>
+        public virtual bool HasReagents()
+        {
+            if (Scroll != null || !Caster.Player ||
+                AosAttributes.GetValue(Caster, AosAttribute.LowerRegCost) > Utility.Random(100) ||
+                DuelContext.IsFreeConsume(Caster))
+            {
+                return true;
+            }
+
+            var pack = Caster.Backpack;
+            var reagents = Info.Reagents;
+            var amounts = Info.Amounts;
+
+            if (pack == null)
+            {
+                return reagents.Length == 0;
+            }
+
+            for (var i = 0; i < reagents.Length; i++)
+            {
+                if (pack.GetAmount(reagents[i]) < amounts[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Deducts mana and consumes reagents/scroll/wand charge, independently of
+        /// CheckSequence(). Used only by TargetFirst's phase-2 outcomes where the spell's own
+        /// Target()/CheckSequence() never runs: a resolution-time validity failure, or a
+        /// mid-delay disturb. Deliberately NOT wired into CheckSequence() itself - reordering
+        /// that shared, heavily-used method to call this would risk changing behavior for
+        /// every spell in the game for the sake of avoiding a few duplicated lines here.
+        /// Sends the same insufficient-mana/reagent messages CheckSequence already uses if the
+        /// caster can no longer actually afford it (e.g. drained mid-delay) and charges nothing
+        /// in that case. Returns whether the cost was actually charged.
+        /// </summary>
+        public bool ConsumeCastingResources()
+        {
+            var mana = ScaleMana(GetMana());
+
+            if (!ConsumeReagents())
+            {
+                Caster.LocalOverheadMessage(MessageType.Regular, 0x22, 502630); // More reagents are needed for this spell.
+                return false;
+            }
+
+            if (Caster.Mana < mana)
+            {
+                Caster.LocalOverheadMessage(MessageType.Regular, 0x22, 502625); // Insufficient mana for this spell.
+                return false;
+            }
+
+            Caster.Mana -= mana;
+
+            if (Scroll is SpellScroll)
+            {
+                Scroll.Consume();
+            }
+            else if (Scroll is BaseWand wand)
+            {
+                wand.ConsumeCharge(Caster);
+                Caster.RevealingAction();
+            }
+
+            return true;
+        }
 
         public virtual void SayMantra()
         {
