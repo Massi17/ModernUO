@@ -23,6 +23,11 @@ namespace Server.Spells.Seventh
 
         public override bool BlocksMovement => false;
 
+        public override bool TargetFirst => true;
+
+        public override bool ValidateTargetFirst(object target) =>
+            target is Mobile m && Caster.CanBeHarmful(m, true);
+
         public void Target(Mobile m)
         {
             if (CheckHSequence(m))
