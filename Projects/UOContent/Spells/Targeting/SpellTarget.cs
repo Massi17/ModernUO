@@ -46,7 +46,55 @@ public class SpellTarget<T> : Target, ISpellTarget<T> where T : class, IPoint3D
         from.SendLocalizedMessage(500237); // Target can not be seen.
     }
 
-    protected override void OnTarget(Mobile from, object o) => _spell.Target(o as T);
+    protected override void OnTarget(Mobile from, object o)
+    {
+        if (_spell is Spell { TargetFirst: true } spell)
+        {
+            if (!spell.ValidateTargetFirst(o))
+            {
+                return; // message already sent by ValidateTargetFirst; phase 1 stays free
+            }
+
+            spell.BeginTargetFirstDelay(() => ResolveTargetFirst(spell, from, o));
+            return;
+        }
+
+        _spell.Target(o as T);
+    }
+
+    /// <summary>
+    /// Runs when a TargetFirst spell's post-click cast delay finishes. Range, line of
+    /// sight, and the spell's own validity check are re-checked - the target may have
+    /// moved, broken LOS, or died during the delay - and any failure here still charges
+    /// the cost, unlike a phase-1 rejection. On success, resolution goes through the
+    /// spell's own Target(), exactly like every other spell - that already deducts
+    /// mana/reagents via CheckSequence(), so ConsumeCastingResources() must NOT also be
+    /// called on this path (it would double-charge).
+    /// </summary>
+    private void ResolveTargetFirst(Spell spell, Mobile from, object o)
+    {
+        if (o is IPoint2D p && Range >= 0 && !from.InRange(p, Range))
+        {
+            spell.ConsumeCastingResources();
+            from.SendLocalizedMessage(500446); // That is too far away.
+            return;
+        }
+
+        if (CheckLOS && !from.InLOS(o))
+        {
+            spell.ConsumeCastingResources();
+            from.SendLocalizedMessage(500237); // Target can not be seen.
+            return;
+        }
+
+        if (!spell.ValidateTargetFirst(o))
+        {
+            spell.ConsumeCastingResources(); // message already sent by ValidateTargetFirst
+            return;
+        }
+
+        _spell.Target(o as T);
+    }
 
     protected override void OnTargetOutOfLOS(Mobile from, object o)
     {
