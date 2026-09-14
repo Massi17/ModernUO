@@ -425,6 +425,15 @@ namespace Server.Spells
                 _castTimer?.Stop();
                 _animTimer?.Stop();
                 Caster.NextSpellTime = Core.TickCount + (int)GetDisturbRecovery().TotalMilliseconds;
+
+                if (_targetFirstCommitted)
+                {
+                    // Phase 2 of a TargetFirst cast had already started (mantra/animation
+                    // playing, delay counting down) - the caster is committed and pays the
+                    // cost even though the spell never resolves.
+                    _targetFirstCommitted = false;
+                    ConsumeCastingResources();
+                }
             }
             else
             {
@@ -473,6 +482,59 @@ namespace Server.Spells
         /// checks (e.g. Caster.CanBeHarmful) - those already send their own message on failure.
         /// </summary>
         public virtual bool ValidateTargetFirst(object target) => true;
+
+        /// <summary>
+        /// Starts phase 2 of a TargetFirst cast: mantra, hand animation, and a cast-delay
+        /// timer, exactly as a normal cast's Cast() would - just moved to after a target has
+        /// been picked instead of before. Marks the caster as committed (Disturb() charges
+        /// mana/reagents on any interruption from here on) and starts the cast-recovery clock.
+        /// When the delay finishes, State is set to Sequencing (required by CheckSequence())
+        /// and onResolve runs.
+        /// </summary>
+        public void BeginTargetFirstDelay(Action onResolve)
+        {
+            SayMantra();
+
+            var castDelay = GetCastDelay();
+
+            if (ShowHandMovement && (Caster.Body.IsHuman || Caster.Player && Caster.Body.IsMonster))
+            {
+                var count = (int)Math.Ceiling(castDelay.TotalSeconds / AnimateDelay.TotalSeconds);
+
+                if (count != 0)
+                {
+                    _animTimer = new AnimTimer(this, count);
+                    _animTimer.Start();
+                }
+
+                if (Info.LeftHandEffect > 0)
+                {
+                    Caster.FixedParticles(0, 10, 5, Info.LeftHandEffect, EffectLayer.LeftHand);
+                }
+
+                if (Info.RightHandEffect > 0)
+                {
+                    Caster.FixedParticles(0, 10, 5, Info.RightHandEffect, EffectLayer.RightHand);
+                }
+            }
+
+            _targetFirstCommitted = true;
+
+            Caster.OnSpellCast(this);
+            Caster.Region?.OnSpellCast(Caster, this);
+            Caster.NextSpellTime = Core.TickCount + (int)GetCastRecovery().TotalMilliseconds;
+
+            _castTimer = new CastTimer(this, castDelay, onResolve);
+
+            if (castDelay > TimeSpan.Zero)
+            {
+                _castTimer.Start();
+            }
+            else
+            {
+                _castTimer.Tick();
+            }
+        }
 
         /// <summary>
         /// Non-consuming sibling of <see cref="ConsumeReagents"/> - checks the same reagents
@@ -1081,10 +1143,12 @@ namespace Server.Spells
         private class CastTimer : Timer
         {
             private readonly Spell m_Spell;
+            private readonly Action _onResolve;
 
-            public CastTimer(Spell spell, TimeSpan castDelay) : base(castDelay)
+            public CastTimer(Spell spell, TimeSpan castDelay, Action onResolve = null) : base(castDelay)
             {
                 m_Spell = spell;
+                _onResolve = onResolve;
             }
 
             protected override void OnTick()
@@ -1093,6 +1157,21 @@ namespace Server.Spells
 
                 if (caster == null)
                 {
+                    return;
+                }
+
+                if (_onResolve != null)
+                {
+                    // TargetFirst phase 2: the target was already picked and OnCast() already
+                    // ran back when the cursor appeared, so this tick only needs to flip the
+                    // state CheckSequence() requires and hand off to the resolve callback.
+                    if (m_Spell.State == SpellState.Casting && caster.Spell == m_Spell)
+                    {
+                        m_Spell.State = SpellState.Sequencing;
+                        m_Spell._castTimer = null;
+                        _onResolve();
+                    }
+
                     return;
                 }
 
