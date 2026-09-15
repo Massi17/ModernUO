@@ -44,6 +44,8 @@ public class PlayerClassSystemTests
         PlayerClassSystem.OnPlayerDeleted(pm);
 
         Assert.Null(PlayerClassSystem.GetContext(pm));
+
+        pm.Delete();
     }
 
     [Fact]

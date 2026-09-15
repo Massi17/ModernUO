@@ -38,6 +38,7 @@ public class PlayerClassRespecTests
         Assert.Empty(context.UnlockedAbilityIds);
         // 50% of the 300 Exp spent (100 + 200) is refunded
         Assert.Equal(4850, context.ExpBalance);
+        Assert.Equal(5000, context.ExpLifetime);
 
         pm.Delete();
     }

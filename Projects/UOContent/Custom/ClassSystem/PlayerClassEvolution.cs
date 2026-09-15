@@ -4,11 +4,14 @@ namespace Server.Custom.ClassSystem;
 
 public static class PlayerClassEvolution
 {
+    private static bool MeetsEvolutionThreshold(PlayerClassContext context) =>
+        context.ExpLifetime + context.HonorLifetime >= PlayerClassSystem.EvolutionThreshold;
+
     public static bool IsEvolutionEligible(PlayerClassContext context) =>
         context != null &&
         !string.IsNullOrEmpty(context.ClassId) &&
         string.IsNullOrEmpty(context.EvolutionId) &&
-        context.ExpLifetime + context.HonorLifetime >= PlayerClassSystem.EvolutionThreshold;
+        MeetsEvolutionThreshold(context);
 
     public static bool TryChooseEvolution(PlayerMobile pm, string evolutionId, out string failureReason)
     {
@@ -25,7 +28,7 @@ public static class PlayerClassEvolution
             return false;
         }
 
-        if (context.ExpLifetime + context.HonorLifetime < PlayerClassSystem.EvolutionThreshold)
+        if (!MeetsEvolutionThreshold(context))
         {
             failureReason = $"{pm.Name} has not reached the evolution threshold yet.";
             return false;

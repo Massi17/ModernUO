@@ -77,6 +77,8 @@ public static class PlayerClassAbilities
         context.ExpBalance -= option.Exp;
         context.HonorBalance -= option.Honor;
         context.UnlockedAbilityIds.Add(abilityId);
+        context.UnlockedAbilityExpCosts.Add(option.Exp);
+        context.UnlockedAbilityHonorCosts.Add(option.Honor);
 
         failureReason = null;
         return true;

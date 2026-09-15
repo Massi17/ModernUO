@@ -35,4 +35,10 @@ public partial class PlayerClassContext
 
     [SerializableField(6)]
     private List<string> _unlockedAbilityIds = new();
+
+    [SerializableField(7)]
+    private List<int> _unlockedAbilityExpCosts = new();
+
+    [SerializableField(8)]
+    private List<int> _unlockedAbilityHonorCosts = new();
 }

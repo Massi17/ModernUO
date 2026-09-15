@@ -48,4 +48,22 @@ public class PlayerClassEquipmentTests
 
         pm.Delete();
     }
+
+    [Fact]
+    public void AlreadyEquippedForbiddenItemIsMovedToBackpackWhenClassIsAssigned()
+    {
+        var pm = new PlayerMobile(World.NewMobile);
+        pm.DefaultMobileInit();
+        pm.AddItem(new Backpack());
+
+        var katana = new Katana();
+        Assert.True(pm.EquipItem(katana));
+
+        PlayerClassAssignment.AssignClass(pm, "Test", out _);
+
+        Assert.Equal(pm.Backpack, katana.Parent);
+        Assert.Null(pm.FindItemOnLayer(katana.Layer));
+
+        pm.Delete();
+    }
 }

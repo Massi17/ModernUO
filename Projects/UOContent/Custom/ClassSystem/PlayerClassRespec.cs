@@ -4,26 +4,26 @@ namespace Server.Custom.ClassSystem;
 
 public static class PlayerClassRespec
 {
-    private static void ApplyRefund(PlayerClassContext context, EvolutionDefinitionData evolution, int refundPercent)
+    private static void ApplyRefund(PlayerClassContext context, int refundPercent)
     {
         var totalExp = 0;
         var totalHonor = 0;
 
-        foreach (var abilityId in context.UnlockedAbilityIds)
+        for (var i = 0; i < context.UnlockedAbilityIds.Count; i++)
         {
-            var ability = evolution?.Abilities.Find(a => a.Id == abilityId);
-            if (ability == null || ability.PaymentOptions.Count == 0)
-            {
-                continue;
-            }
-
-            var canonicalCost = ability.PaymentOptions[0];
-            totalExp += canonicalCost.Exp;
-            totalHonor += canonicalCost.Honor;
+            totalExp += context.UnlockedAbilityExpCosts[i];
+            totalHonor += context.UnlockedAbilityHonorCosts[i];
         }
 
         context.ExpBalance += totalExp * refundPercent / 100;
         context.HonorBalance += totalHonor * refundPercent / 100;
+    }
+
+    private static void ClearUnlockedAbilities(PlayerClassContext context)
+    {
+        context.UnlockedAbilityIds.Clear();
+        context.UnlockedAbilityExpCosts.Clear();
+        context.UnlockedAbilityHonorCosts.Clear();
     }
 
     public static bool RespecEvolution(PlayerMobile pm, string newEvolutionId, out string failureReason)
@@ -42,10 +42,8 @@ public static class PlayerClassRespec
             return false;
         }
 
-        var currentEvolution = PlayerClassSystem.GetEvolution(context.ClassId, context.EvolutionId);
-        ApplyRefund(context, currentEvolution, PlayerClassSystem.EvolutionRespecRefundPercent);
-
-        context.UnlockedAbilityIds.Clear();
+        ApplyRefund(context, PlayerClassSystem.EvolutionRespecRefundPercent);
+        ClearUnlockedAbilities(context);
         context.EvolutionId = newEvolutionId;
 
         failureReason = null;
@@ -70,15 +68,15 @@ public static class PlayerClassRespec
 
         if (!string.IsNullOrEmpty(context.EvolutionId))
         {
-            var currentEvolution = PlayerClassSystem.GetEvolution(context.ClassId, context.EvolutionId);
-            ApplyRefund(context, currentEvolution, PlayerClassSystem.ClassRespecRefundPercent);
+            ApplyRefund(context, PlayerClassSystem.ClassRespecRefundPercent);
         }
 
-        context.UnlockedAbilityIds.Clear();
+        ClearUnlockedAbilities(context);
         context.EvolutionId = null;
         context.ClassId = newClassId;
 
         PlayerClassAssignment.ApplySkillCaps(pm, newClassDef);
+        PlayerClassEquipment.UnequipForbiddenItems(pm);
 
         failureReason = null;
         return true;

@@ -51,4 +51,19 @@ public class PlayerClassAssignmentTests
 
         pm.Delete();
     }
+
+    [Fact]
+    public void AssignClass_ClampsExistingSkillBaseDownToTheNewCap()
+    {
+        var pm = new PlayerMobile(World.NewMobile);
+        pm.DefaultMobileInit();
+        pm.Skills[SkillName.Magery].Base = 100.0;
+
+        Assert.True(PlayerClassAssignment.AssignClass(pm, "Test", out var failureReason));
+        Assert.Null(failureReason);
+
+        Assert.Equal(0.0, pm.Skills[SkillName.Magery].Base);
+
+        pm.Delete();
+    }
 }

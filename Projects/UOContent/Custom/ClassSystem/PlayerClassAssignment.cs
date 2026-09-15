@@ -22,6 +22,7 @@ public static class PlayerClassAssignment
 
         context.ClassId = classId;
         ApplySkillCaps(pm, classDef);
+        PlayerClassEquipment.UnequipForbiddenItems(pm);
 
         failureReason = null;
         return true;
@@ -33,7 +34,12 @@ public static class PlayerClassAssignment
         for (var i = 0; i < skills.Length; i++)
         {
             var skill = skills[i];
-            skill.Cap = classDef.AllowedSkills.Contains(skill.SkillName) ? classDef.SkillCap : 0.0;
+            var cap = classDef.AllowedSkills.Contains(skill.SkillName) ? classDef.SkillCap : 0.0;
+            skill.Cap = cap;
+            if (skill.Base > cap)
+            {
+                skill.Base = cap;
+            }
         }
     }
 }

@@ -142,7 +142,18 @@ public static class ClassSystemCommands
         }
 
         var abilityId = e.GetString(0);
-        int? optionIndex = e.Length >= 2 && int.TryParse(e.GetString(1), out var parsed) ? parsed : null;
+
+        int? optionIndex = null;
+        if (e.Length >= 2)
+        {
+            if (!int.TryParse(e.GetString(1), out var parsedOptionIndex))
+            {
+                e.Mobile.SendMessage("Usage: UnlockAbility <abilityId> [paymentOptionIndex] — paymentOptionIndex must be a whole number.");
+                return;
+            }
+
+            optionIndex = parsedOptionIndex;
+        }
 
         pm.SendMessage(
             PlayerClassAbilities.TryUnlockAbility(pm, abilityId, optionIndex, out var failureReason)
