@@ -48,7 +48,7 @@ public class SpellTarget<T> : Target, ISpellTarget<T> where T : class, IPoint3D
 
     protected override void OnTarget(Mobile from, object o)
     {
-        if (_spell is Spell { TargetFirst: true } spell)
+        if (_spell is Spell { UsesDeferredCast: true } spell)
         {
             if (from.Spell != spell)
             {
