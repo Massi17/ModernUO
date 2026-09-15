@@ -52,7 +52,7 @@ Formato per ogni voce: cosa è stato fatto, cosa manca per chiuderlo, stato attu
 - **Manca (da verificare in gioco, uno per uno):**
   - Spell A in cast (animazione/delay in corso, mirino non ancora apparso) → premi Spell B → nessun blocco, nessun messaggio "already casting", il mirino di B appare subito
   - Clicchi un bersaglio valido col mirino di B → A flizza e paga mana/reagenti, B parte normalmente da lì (mantra, animazione, il suo delay, poi risolve)
-  - Annulli il mirino di B prima di cliccare (o B fallisce i suoi stessi controlli su mana/reagenti) → A resta come se nulla fosse, nessun addebito
+  - Annulli il mirino di B prima di cliccare (o scade il timeout) → A viene comunque flizzato e addebitato (fix della revisione finale: prima evaporava, ora no); se invece B fallisce i suoi stessi controlli su mana/reagenti PRIMA di mostrare il mirino, A resta come se nulla fosse, nessun addebito (B non ha mai davvero interrotto nulla)
   - Interrompi B con uno spell C prima di cliccare il bersaglio di B → A viene comunque flizzato e addebitato subito al momento in cui C si conferma
   - Uno spell `TargetFirst` (Flame Strike) con il proprio mirino ancora aperto, interrotto da qualsiasi cosa (compreso un nuovo cast) → resta gratis, comportamento invariato rispetto alla feature target-first originale
   - Uno spell `TargetFirst` già confermato (mirino cliccato, delay in corso) interrotto → paga, comportamento invariato
