@@ -684,20 +684,21 @@ namespace Server.Spells
             var isCasting = Caster.Spell?.IsCasting == true;
             var isWand = Scroll is BaseWand;
 
-            if (isCasting)
+            Spell interruptedSpell = null;
+
+            if (isCasting && !isWand)
             {
-                if (isWand)
-                {
-                    Caster.SendLocalizedMessage(502643); // You can not cast a spell while frozen.
-                }
-                else
-                {
-                    Caster.SendLocalizedMessage(502642); // You are already casting a spell.
-                }
+                interruptedSpell = Caster.Spell as Spell;
             }
-            else if (BlockedByHorrificBeast &&
-                     TransformationSpellHelper.UnderTransformation(Caster, typeof(HorrificBeastSpell)) ||
-                     BlockedByAnimalForm && AnimalForm.UnderTransformation(Caster))
+            else if (isCasting) // isWand
+            {
+                Caster.SendLocalizedMessage(502643); // You can not cast a spell while frozen.
+                return false;
+            }
+
+            if (BlockedByHorrificBeast &&
+                TransformationSpellHelper.UnderTransformation(Caster, typeof(HorrificBeastSpell)) ||
+                BlockedByAnimalForm && AnimalForm.UnderTransformation(Caster))
             {
                 Caster.SendLocalizedMessage(1061091); // You cannot cast that spell in this form.
             }
@@ -738,19 +739,20 @@ namespace Server.Spells
                         Caster.LocalOverheadMessage(MessageType.Regular, 0x22, 502625); // Insufficient mana
                     }
                 }
-                else if (TargetFirst && !HasReagents())
+                else if ((TargetFirst || interruptedSpell != null) && !HasReagents())
                 {
                     Caster.LocalOverheadMessage(MessageType.Regular, 0x22, 502630); // More reagents are needed for this spell.
                 }
                 else
                 {
-                    if (Caster.Spell == null && Caster.CheckSpellCast(this) && CheckCast() &&
+                    if ((Caster.Spell == null || interruptedSpell != null) && Caster.CheckSpellCast(this) && CheckCast() &&
                         Caster.Region.OnBeginSpellCast(Caster, this))
                     {
                         State = SpellState.Casting;
                         Caster.Spell = this;
+                        _interruptedSpell = interruptedSpell;
 
-                        if (TargetFirst)
+                        if (UsesDeferredCast)
                         {
                             if (!isWand && RevealOnCast)
                             {
