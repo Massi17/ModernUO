@@ -6,6 +6,35 @@ Formato per ogni voce: cosa è stato fatto, cosa manca per chiuderlo, stato attu
 
 ---
 
+## Motore classi/evoluzioni/abilità (segnaposto)
+
+- **Stato:** Implementato, buildato, testato (24 test automatici) — in attesa di verifica in gioco.
+- **Cosa copre:** il motore generico descritto in `custom-docs/design/classes.md` (vincolo skill/equip per classe, soglia EXP+HONOR, scelta evoluzione esclusiva tra 3, sblocco passive→pvp/pve→ultimate con pricing multi-valuta per-abilità, respec con rimborso parziale) — validato con **una sola classe segnaposto ("Test") e le sue 3 evoluzioni segnaposto** ("TestAlpha"/"TestBeta"/"TestGamma"), non ancora con contenuto reale. La sottoclasse lavorativa (economia) resta esplicitamente fuori da questo lavoro — un piano separato futuro.
+- **Fatto:**
+  - `Projects/UOContent/Custom/ClassSystem/`: `ClassSystemConfig.cs` (modello dati + seed di default), `PlayerClassContext.cs` (stato per personaggio, serializzato), `PlayerClassSystem.cs` (persistenza + registry, config caricata pigramente da `Configuration/ClassSystem/classes.json`), `PlayerClassCurrency.cs` (EXP/HONOR), `PlayerClassAssignment.cs` (assegna classe + cap skill), `PlayerClassEquipment.cs` (veto equip per tipo), `PlayerClassEvolution.cs` (soglia + scelta evoluzione), `PlayerClassAbilities.cs` (ordine di sblocco + pricing), `PlayerClassRespec.cs` (respec con rimborso parziale)
+  - `Projects/UOContent/Custom/Mobiles/PlayerMobile.ClassSystem.cs`: override `OnEquip` (nuovo file, `PlayerMobile.cs` non toccato)
+  - `Projects/UOContent/Custom/Commands/ClassSystemCommands.cs`: comandi `SetClass`/`AwardExp`/`AwardHonor`/`RespecEvolution`/`RespecClass` (GM) e `ChooseEvolution`/`UnlockAbility`/`ClassStatus` (player)
+  - Build e `dotnet test` puliti (24/24 sui nuovi test, nessun fallimento preesistente toccato)
+  - Nessuna riga in `CUSTOM_CHANGES.md`: nessun file preesistente è stato modificato, solo file nuovi
+- **Manca (da verificare in gioco, uno per uno):**
+  - [ ] `[SetClass Test` su un personaggio target → messaggio di conferma, `[ClassStatus` mostra `Class: Test | Evolution: (none yet)`
+  - [ ] Tentare `[SetClass Test` una seconda volta sullo stesso personaggio → messaggio di rifiuto ("already belongs"), nessun cambiamento
+  - [ ] Dopo `SetClass`, provare ad allenare una skill NON nella whitelist (es. Magery) → cap 0, non allenabile; una skill nella whitelist (es. Swords) → allenabile fino a 100
+  - [ ] Provare a equipaggiare una Katana dopo `SetClass Test` → rifiutata con messaggio "Your class cannot use that.", l'item resta nel backpack
+  - [ ] Equipaggiare un'arma NON in lista (es. Dagger) dopo `SetClass Test` → funziona normalmente
+  - [ ] `[ChooseEvolution TestAlpha` prima di raggiungere la soglia (EXP+HONOR lifetime) → messaggio di rifiuto ("threshold")
+  - [ ] `[AwardExp 1000` (o oltre la soglia configurata) poi `[ChooseEvolution TestAlpha` → successo, `[ClassStatus` mostra l'evoluzione
+  - [ ] `[ChooseEvolution TestBeta` dopo aver già scelto `TestAlpha` → messaggio di rifiuto ("already chose")
+  - [ ] `[UnlockAbility TestAlpha_pvp_1` prima di aver sbloccato le passive → messaggio di rifiuto ("locked")
+  - [ ] Sbloccare entrambe le passive, poi pvp e pve in ordine misto a piacere → tutte si sbloccano, `[ClassStatus` le elenca
+  - [ ] `[UnlockAbility TestAlpha_ultimate_1` prima di aver sbloccato TUTTE le pvp/pve → rifiutata; dopo averle sbloccate tutte → riuscita
+  - [ ] `[UnlockAbility <id> 0` con un indice di opzione di pagamento esplicito → spende esattamente quella valuta/importo; con un indice fuori range → rifiutata
+  - [ ] `[RespecEvolution TestBeta` dopo aver sbloccato alcune abilità → evoluzione cambiata, abilità sbloccate azzerate, parte della valuta spesa rimborsata (~50% di default)
+  - [ ] `[RespecClass Test` → stessa dinamica, e i cap delle skill vengono ricalcolati per la nuova classe (in questo test, la stessa "Test", visto che è l'unica classe segnaposto)
+  - Decisione finale: tenere il motore così com'è per procedere al contenuto reale delle 4 classi, o aggiustare qualcosa prima
+
+---
+
 ## Target-first casting su Flame Strike
 
 - **Stato:** Implementato, buildato, testato, revisionato (con un giro di correzioni) — in attesa di verifica in gioco
