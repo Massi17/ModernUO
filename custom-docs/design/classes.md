@@ -29,4 +29,53 @@ Questo è interamente realizzabile in `UOContent` (nessuna modifica al motore `S
 
 ## Decisioni custom
 
-Nessuna decisione ancora presa.
+Framework generico deciso il 2026-09-15 (brainstorming). Copre le **regole del sistema**, valide per qualunque classe futura. Non ancora decisi: nomi/temi delle 4 classi iniziali, il contenuto reale delle 3 evoluzioni per classe (cosa fanno le singole passive/pvp/pve/ultimate), la UI lato client — lavoro di una sessione successiva, una per classe.
+
+### Struttura: Classe → fase base → Evoluzione
+
+- **Classe = vincolo reale**, non solo flavor: sfrutta il cap-per-skill custom descritto sopra (skill vietate → `Cap = 0`) più un blocco equip lato `Item.OnEquip`/`CheckItemUse` per armi/armature incoerenti con la classe. 4 classi iniziali, scelta alla creazione del personaggio (come le Professions, ma persistente).
+- **Fase "classe base"**: subito dopo la scelta, il personaggio ha solo i vincoli skill/equip della classe — **nessuna abilità speciale ancora**. È pura gavetta.
+- **Soglia di evoluzione**: quando il totale *lifetime* di EXP+HONOR guadagnati (somma di tutto ciò che il personaggio ha mai guadagnato, non il saldo spendibile — non scende mai, nemmeno con un respec) supera una soglia configurabile, si sblocca la scelta dell'Evoluzione.
+- **Evoluzione = sottoclasse esclusiva**: ogni classe ha 3 evoluzioni, sono percorsi alternativi (tipo specializzazione), se ne sceglie una sola. Da qui in poi il personaggio ha accesso al pool di abilità di quell'evoluzione.
+
+### Abilità: pool e ordine di sblocco
+
+Ogni evoluzione ha un pool di N passive, N pvp, N pve, N ultimate (N per-evoluzione, deciso quando si progetta il contenuto reale). Ordine di sblocco, univoco e non aggirabile:
+
+1. **Tutte** le passive (ordine libero tra loro) — obbligatorie prima di qualunque pvp/pve.
+2. Pvp e pve **liberamente intrecciate**: si può sbloccare in qualsiasi ordine e mescolare le due categorie a piacere, finché non sono sbloccate **tutte** (100% di entrambe le categorie, nessuna soglia parziale).
+3. Solo a quel punto si aprono le **ultimate** (ordine libero tra loro).
+
+Modello "albero permanente": ogni abilità sbloccata resta acquisita per sempre ed è sempre utilizzabile insieme a tutte le altre già sbloccate — nessun sistema di loadout/slot attivi da gestire.
+
+### Valute: EXP e HONOR
+
+- **EXP**: guadagnato tramite PvM. **HONOR**: guadagnato tramite PvP. Sono due contatori custom nuovi sul personaggio (estensione `PlayerMobile` in `Projects/UOContent/Custom/`, non riusano gold/fame/altri sistemi esistenti).
+- Per ogni personaggio si tracciano **due totali distinti**: il *lifetime* (mai guadagnato, usato solo per il gate della soglia di evoluzione, monotono crescente) e il *saldo spendibile* (quanto resta da spendere in abilità, diminuisce quando si compra, aumenta con eventuale rimborso da respec).
+
+### Pricing: dati per abilità, non regole per categoria
+
+Niente regola fissa tipo "pvp costa sempre HONOR" — ogni abilità definisce nei suoi dati una o più **opzioni di pagamento**, ciascuna un insieme di importi in EXP e/o HONOR. Il giocatore sblocca l'abilità soddisfacendo per intero una qualsiasi delle opzioni definite. Questo singolo meccanismo copre da solo tutti i casi:
+
+- pagamento a valuta singola con alternativa penalizzata (es. pvp: opzione A = 300 HONOR, opzione B = 600 EXP);
+- pagamento a valuta combinata obbligatoria, utile per le ultimate (es. un'unica opzione = 5000 EXP **e** 5000 HONOR insieme, nessuna alternativa a valuta singola).
+
+Tutti gli importi (e quali opzioni esistono per quale abilità) vivono in un **file di configurazione** dedicato — nessun hardcode per categoria — così le classi specifiche potranno calibrare passive/pvp/pve/ultimate indipendentemente quando si progetta il contenuto reale, riusando il sistema di configurazione nativo di ModernUO (`dev-docs/configuration.md`).
+
+### Respec
+
+- Cambiare **solo evoluzione** (restando nella stessa classe) o **classe intera** è possibile, ma non gratuito: entrambi rimborsano solo una **percentuale** di EXP/HONOR spesi (mai il 100%), per scoraggiare il cambio frequente. Le due percentuali (evoluzione vs classe) sono valori distinti in un file di configurazione, non ancora calibrati — placeholder da tarare in seguito.
+- Il respec **non tocca i totali lifetime**: non fa riperdere una soglia di evoluzione già raggiunta.
+- Il respec di **classe** azzera anche l'evoluzione scelta (le abilità sbloccate dell'evoluzione abbandonata vengono perse, rimborso parziale come sopra); se il lifetime è già oltre soglia, il personaggio può ri-scegliere subito una nuova evoluzione senza rifare la gavetta.
+- Accesso al respec **oggi**: solo comando riservato allo staff (GM). **In futuro** la stessa funzione sarà esposta anche tramite un item o dialogo con un NPC — l'implementazione iniziale deve tenere la logica di respec separata dal trigger (comando GM come primo/unico chiamante), per non dover riscrivere nulla quando si aggiungerà l'item/NPC.
+
+### Interazione con meccanismi esistenti
+
+Razze (`Race`) e Professions restano invariate e si sommano ai vincoli di classe (non li sostituiscono): un personaggio ha sempre i veti di razza + i veti di classe, e la Profession scelta alla creazione resta solo un preset di stat/skill/equip iniziale come oggi.
+
+### Non ancora deciso (fuori scope di questo giro)
+
+- Nomi/temi delle 4 classi e contenuto reale di ogni evoluzione (numero e effetto di passive/pvp/pve/ultimate).
+- Valore della soglia EXP+HONOR per sbloccare l'evoluzione.
+- Percentuali di rimborso del respec.
+- UI lato client per navigare/acquistare l'albero di abilità (da progettare in `ClassicUO/custom-docs/design/` quando si passa al contenuto reale — vedi nota sul vincolo del client, non bloccante, in `README.md`).
