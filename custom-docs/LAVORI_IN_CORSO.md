@@ -33,3 +33,29 @@ Formato per ogni voce: cosa è stato fatto, cosa manca per chiuderlo, stato attu
   - Un commento XML su `BeginTargetFirstDelay` è rimasto leggermente disallineato dopo la correzione (dice ancora che avvia lui il recovery clock, ora lo fa `CastTimer`)
   - Nel ramo di risoluzione di `CastTimer` manca l'aggiornamento del flag di paralisi (`Caster.Delta(MobileDelta.Flags)`) che il ramo originale invece fa — preesistente, non introdotto da questa feature
   - Nessun test automatico copre lo scenario "click fantasma dopo interruzione" o il timing di `NextSpellTime` — solo verifica manuale per ora
+
+---
+
+## Interrompere un cast per lanciarne un altro
+
+- **Stato:** Implementato, buildato, testato — in attesa di revisione finale e di verifica in gioco
+- **Fatto:**
+  - `Spell.cs`: `_interruptedSpell` + `UsesDeferredCast` (generalizzazione del meccanismo target-first)
+  - `Spell.cs`: `Cast()` non blocca più con "You are already casting a spell." — cattura lo spell interrotto e lascia proseguire i controlli normali (mana, reagenti, paralisi, ecc.) per il nuovo spell
+  - `SpellTarget.cs`: `OnTarget` rimanda la risoluzione per qualsiasi spell che interrompe un cast in corso, non solo quelli con `TargetFirst`
+  - `Spell.cs`: `BeginTargetFirstDelay` flizza lo spell interrotto (con addebito mana/reagenti) nel momento in cui il click sul bersaglio del nuovo spell si conferma, non quando il nuovo spell viene semplicemente premuto
+  - `Spell.cs`: catena di interruzioni (A interrotto da B, B interrotto da C prima di cliccare) — l'obbligo di A viene risolto subito quando C si conferma, non perso
+  - Fix: `Disturb()` non azzera più `Caster.Spell` incondizionatamente (poteva cancellare il riferimento al nuovo spell mentre disturbava quello vecchio)
+  - Build e `dotnet test` puliti (nessun fallimento nuovo)
+  - Loggato in `custom-docs/CUSTOM_CHANGES.md`
+- **Manca (da verificare in gioco, uno per uno):**
+  - Spell A in cast (animazione/delay in corso, mirino non ancora apparso) → premi Spell B → nessun blocco, nessun messaggio "already casting", il mirino di B appare subito
+  - Clicchi un bersaglio valido col mirino di B → A flizza e paga mana/reagenti, B parte normalmente da lì (mantra, animazione, il suo delay, poi risolve)
+  - Annulli il mirino di B prima di cliccare (o B fallisce i suoi stessi controlli su mana/reagenti) → A resta come se nulla fosse, nessun addebito
+  - Interrompi B con uno spell C prima di cliccare il bersaglio di B → A viene comunque flizzato e addebitato subito al momento in cui C si conferma
+  - Uno spell `TargetFirst` (Flame Strike) con il proprio mirino ancora aperto, interrotto da qualsiasi cosa (compreso un nuovo cast) → resta gratis, comportamento invariato rispetto alla feature target-first originale
+  - Uno spell `TargetFirst` già confermato (mirino cliccato, delay in corso) interrotto → paga, comportamento invariato
+  - Tentativo di cast con una bacchetta (wand) mentre già in cast → messaggio "You can not cast a spell while frozen." invariato, nessun cambiamento di comportamento
+  - **Problema noto, non chiuso (trovato in revisione, richiede una decisione):** se annulli il mirino dello spell B (Esc, o interrompi B a sua volta senza cliccare un bersaglio valido, o il click su B fallisce per range/LOS/validità) PRIMA che B si confermi, l'obbligo di far pagare A evapora — A resta bloccato in "casting" per sempre (il suo CastTimer non fa più nulla) e non paga mai, e il giocatore può ripetere per annullare completamente il costo di uno spell
+  - **Problema noto, non chiuso (trovato in revisione, richiede una decisione):** uno spell che si risolve senza mai mostrare un mirino (es. Reactive Armor e altri spell AOS a risoluzione istantanea) se usato per interrompere un altro spell fallisce silenziosamente su se stesso E fa evaporare l'obbligo di pagamento dello spell interrotto, perché il nuovo flusso differito parte comunque anche se lo spell non ha davvero un bersaglio da cliccare
+  - Decisione finale: tenere la modifica, aggiustare qualcosa, o revert
