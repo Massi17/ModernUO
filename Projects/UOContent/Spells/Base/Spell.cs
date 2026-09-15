@@ -39,9 +39,7 @@ namespace Server.Spells
         /// once this cast's own target click commits, instead of the moment it merely
         /// started. See custom-docs/specs/2026-09-15-cast-interrupt-recast-design.md.
         /// </summary>
-#pragma warning disable CS0649
         private Spell _interruptedSpell;
-#pragma warning restore CS0649
 
         /// <summary>
         /// True when this cast uses the cursor-first, target-delayed flow: either because
@@ -170,6 +168,8 @@ namespace Server.Spells
             {
                 Caster.Spell = null;
             }
+
+            SettlePendingInterrupt();
 
             Caster.Delta(MobileDelta.Flags); // Remove paralyze
         }
@@ -454,23 +454,28 @@ namespace Server.Spells
                     EndTargetFirstCommitment();
                     ConsumeCastingResources();
                 }
-                else if (TargetFirst)
+                else if (UsesDeferredCast)
                 {
-                    // Phase 1 of a TargetFirst cast: the cursor is up but no target has been
-                    // picked yet. Cancel it so a stale click can't resurrect this disturbed
-                    // spell instance - the SpellTarget<T>.OnTarget guard below is the actual
-                    // fix for that; this just makes the cursor disappear immediately instead
-                    // of lingering, clickable but inert, until it times out on its own.
+                    // Sitting on a free, uncommitted cursor - either a genuine TargetFirst
+                    // spell, or a spell deferring only because it's interrupting something
+                    // else. Either way it hasn't committed to anything of its own yet, so it
+                    // stays free itself; cancel the cursor so a stale click can't resurrect
+                    // this disturbed spell instance (the SpellTarget<T>.OnTarget guard is the
+                    // actual fix for that click; this just makes the cursor disappear
+                    // immediately instead of lingering, clickable but inert, until it times
+                    // out on its own).
                     Target.Cancel(Caster);
                 }
                 else if (type == DisturbType.NewCast)
                 {
-                    // Not TargetFirst (or a TargetFirst cast still sitting on its own free,
-                    // uncommitted cursor - handled above) but interrupted by a new cast: the
-                    // caster already had resources committed to this cast attempt, so the new
-                    // cast fizzling it still charges.
+                    // Not deferring (or was deferring but handled above) - a plain in-flight
+                    // cast interrupted by a new cast: the caster already had resources
+                    // committed to this cast attempt, so the new cast fizzling it still
+                    // charges.
                     ConsumeCastingResources();
                 }
+
+                SettlePendingInterrupt();
             }
             else
             {
@@ -539,6 +544,24 @@ namespace Server.Spells
         internal void EndTargetFirstCommitment() => _targetFirstCommitted = false;
 
         /// <summary>
+        /// Settles this cast's own pending obligation to fizzle-and-charge whatever it
+        /// interrupted, if it still holds one. Called from every path that tears this spell
+        /// down - normal resolution (FinishSequence), being disturbed before resolving
+        /// (Disturb), and the moment phase 2 actually begins (BeginTargetFirstDelay) - so the
+        /// obligation is settled exactly once, on whichever of those happens first, and is
+        /// never silently dropped no matter how this cast ends.
+        /// </summary>
+        private void SettlePendingInterrupt()
+        {
+            if (_interruptedSpell != null)
+            {
+                var interrupted = _interruptedSpell;
+                _interruptedSpell = null;
+                interrupted.Disturb(DisturbType.NewCast);
+            }
+        }
+
+        /// <summary>
         /// Starts phase 2 of a TargetFirst cast: mantra, hand animation, and a cast-delay
         /// timer, exactly as a normal cast's Cast() would - just moved to after a target has
         /// been picked instead of before. Marks the caster as committed, so Disturb() charges
@@ -548,12 +571,7 @@ namespace Server.Spells
         /// </summary>
         public void BeginTargetFirstDelay(Action onResolve)
         {
-            if (_interruptedSpell != null)
-            {
-                var interrupted = _interruptedSpell;
-                _interruptedSpell = null;
-                interrupted.Disturb(DisturbType.NewCast);
-            }
+            SettlePendingInterrupt();
 
             SayMantra();
 
@@ -744,6 +762,11 @@ namespace Server.Spells
             }
             else
             {
+                // interruptedSpell (the local captured above) must be used here and in the
+                // success-block guard below, not the UsesDeferredCast property - the property
+                // reads _interruptedSpell, which isn't assigned until inside the success block
+                // further down. Only the phase-1 branch after that assignment can safely read
+                // UsesDeferredCast instead.
                 var requiredMana = ScaleMana(GetMana());
 
                 if (Caster.Mana < requiredMana)
@@ -773,9 +796,17 @@ namespace Server.Spells
 
                         if (interruptedSpell?._interruptedSpell != null)
                         {
-                            var chained = interruptedSpell._interruptedSpell;
-                            interruptedSpell._interruptedSpell = null;
-                            chained.Disturb(DisturbType.NewCast);
+                            // interruptedSpell is itself mid-interrupting something, and its
+                            // own cursor is about to be torn down synchronously by OnCast()
+                            // below (only one spell can occupy Caster.Target at a time) - it
+                            // will never get its own click to settle what it owes, and it
+                            // won't survive long enough for a click on THIS cast's target to
+                            // charge it either. Settle both right here: what it owed, then
+                            // what's owed for it. (_interruptedSpell above stays set to it so
+                            // UsesDeferredCast below still reflects that this cast is itself
+                            // interrupting something - do not null it here.)
+                            interruptedSpell.SettlePendingInterrupt();
+                            interruptedSpell.Disturb(DisturbType.NewCast);
                         }
 
                         if (UsesDeferredCast)

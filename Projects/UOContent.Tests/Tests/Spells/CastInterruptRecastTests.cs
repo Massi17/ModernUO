@@ -45,8 +45,8 @@ public class CastInterruptRecastTests
         Assert.Equal(SpellState.Casting, b.State);
         Assert.IsType<SpellTarget<Mobile>>(caster.Target);
 
-        // A hasn't been touched yet - it's only fizzled once B's own target click commits
-        // (Task 4), not just from B being pressed.
+        // A hasn't been touched yet - it's only fizzled once B's own target click commits,
+        // not just from B being pressed.
         Assert.Equal(SpellState.Casting, a.State);
         Assert.Equal(manaBeforeCast, caster.Mana);
 
@@ -80,7 +80,7 @@ public class CastInterruptRecastTests
         // interrupting A.
         Assert.True(b.TargetFirstCommitted);
 
-        // A's fizzle-charge fires right here, once B's deferred resolution begins (Task 4).
+        // A's fizzle-charge fires right here, once B's deferred resolution begins.
         Assert.Equal(SpellState.None, a.State);
 
         b.Disturb(DisturbType.Kill); // stop the pending cast timer
@@ -110,7 +110,7 @@ public class CastInterruptRecastTests
         var b = new MagicArrowSpell(caster);
         b.Cast();
 
-        // Still nothing charged just from pressing B - matches Task 2's gate change.
+        // Still nothing charged just from pressing B.
         Assert.Equal(SpellState.Casting, a.State);
         Assert.Equal(manaBeforeCast, caster.Mana);
 
@@ -148,17 +148,101 @@ public class CastInterruptRecastTests
 
         var b = new MagicArrowSpell(caster);
         b.Cast(); // B interrupts A - A remembered, not yet charged
+        var bManaCost = b.ScaleMana(b.GetMana());
 
         var c = new MagicArrowSpell(caster);
         c.Cast(); // C interrupts B before B's own target was ever clicked
 
-        // B's own click will never come now - its pending obligation to fizzle A must be
-        // settled immediately once C actually commits, not left to evaporate.
+        // B's own click will never come now - its pending obligation to fizzle A, AND B's own
+        // charge for interrupting A in the first place, must both be settled immediately once
+        // C actually commits, not left to evaporate. Every spell that gets superseded pays -
+        // A directly here, B because it was itself about to be torn down the same way.
         Assert.Equal(SpellState.None, a.State);
-        Assert.Equal(manaBeforeCast - aManaCost, caster.Mana);
+        Assert.Equal(SpellState.None, b.State);
+        Assert.Equal(manaBeforeCast - aManaCost - bManaCost, caster.Mana);
         Assert.Same(c, caster.Spell);
 
         c.Disturb(DisturbType.Kill); // stop the pending cast timer
+        caster.Delete();
+    }
+
+    [Fact]
+    public void InterruptingSpellDisturbedBeforeItsOwnClick_StillChargesTheInterrupted()
+    {
+        var caster = new Mobile(World.NewMobile);
+        caster.DefaultMobileInit();
+        caster.RawInt = 100;
+        caster.Mana = 100;
+        caster.MoveToWorld(new Point3D(1000, 1000, 0), Map.Felucca);
+
+        var a = new MagicArrowSpell(caster) { State = SpellState.Casting };
+        caster.Spell = a;
+
+        var manaBeforeCast = caster.Mana;
+        var aManaCost = a.ScaleMana(a.GetMana());
+
+        var b = new MagicArrowSpell(caster);
+        b.Cast(); // B interrupts A - A remembered, not yet charged
+
+        // B itself gets disturbed (e.g. took damage) before ever clicking its own target -
+        // B's cursor should be cancelled (it never committed to anything of its own), but its
+        // pending obligation to fizzle A must still be settled, not dropped.
+        b.Disturb(DisturbType.Hurt, false, true);
+
+        Assert.Equal(SpellState.None, a.State);
+        Assert.Equal(manaBeforeCast - aManaCost, caster.Mana);
+
+        caster.Delete();
+    }
+
+    [Fact]
+    public void InstantResolveSpell_StillChargesTheInterruptedSpellEvenThoughItFizzlesItself()
+    {
+        var caster = new Mobile(World.NewMobile);
+        caster.DefaultMobileInit();
+        caster.RawInt = 100;
+        caster.Mana = 100;
+        caster.MoveToWorld(new Point3D(1000, 1000, 0), Map.Felucca);
+
+        var a = new MagicArrowSpell(caster) { State = SpellState.Casting };
+        caster.Spell = a;
+
+        var manaBeforeCast = caster.Mana;
+        var aManaCost = a.ScaleMana(a.GetMana());
+
+        var b = new ReactiveArmorSpell(caster);
+        var result = b.Cast(); // B interrupts A, but B itself never shows a cursor
+
+        Assert.True(result);
+        Assert.Equal(SpellState.None, a.State);
+        Assert.Equal(manaBeforeCast - aManaCost, caster.Mana);
+
+        caster.Delete();
+    }
+
+    [Fact]
+    public void TargetFirstSpell_StaysFreeWhenSupersededByAnotherCast()
+    {
+        var caster = new Mobile(World.NewMobile);
+        caster.DefaultMobileInit();
+        caster.RawInt = 100;
+        caster.Mana = 100;
+        caster.MoveToWorld(new Point3D(1000, 1000, 0), Map.Felucca);
+
+        var a = new FlameStrikeSpell(caster);
+        a.Cast(); // A shows its own free, uncommitted cursor - not interrupting anything
+
+        var manaBeforeCast = caster.Mana;
+
+        var b = new MagicArrowSpell(caster);
+        b.Cast(); // B supersedes A's cursor
+
+        // A was never committed to anything of its own - stays free, exactly like the
+        // original target-first-casting spec guarantees, regardless of what superseded it.
+        Assert.Equal(SpellState.None, a.State);
+        Assert.Equal(manaBeforeCast, caster.Mana);
+
+        b.Disturb(DisturbType.Kill); // stop the pending cast timer
         caster.Delete();
     }
 }
