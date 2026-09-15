@@ -73,9 +73,25 @@ Tutti gli importi (e quali opzioni esistono per quale abilità) vivono in un **f
 
 Razze (`Race`) e Professions restano invariate e si sommano ai vincoli di classe (non li sostituiscono): un personaggio ha sempre i veti di razza + i veti di classe, e la Profession scelta alla creazione resta solo un preset di stat/skill/equip iniziale come oggi.
 
+### Sottoclasse lavorativa (seme del sistema economia)
+
+Deciso il 2026-09-15, in aggiunta al framework sopra. È il primo tassello di un sistema di economia più ampio che verrà costruito nelle prossime sessioni — questa sezione copre solo la sottoclasse in sé, non l'economia generale.
+
+- **Layer opzionale e ortogonale**: non è un'alternativa alle 3 Evoluzioni pvp/pve, si somma alla progressione normale del personaggio. Un pg può avere sia un'Evoluzione da combattimento sia (se è il prescelto dell'account) la sottoclasse lavorativa. Non è gate-ata dalla soglia di Evoluzione: il GM può assegnarla a un personaggio in qualunque fase (anche in "classe base").
+- **Cosa dà**: sblocca N skill lavorative extra (N indicativamente 3-5, valore esatto e contenuto del pacchetto — quali skill — da decidere in futuro) oltre al normale elenco di skill permesse dalla classe (le classi normalmente ne permetteranno 6-8, numero anch'esso da definire per classe). Il pacchetto di skill lavorative extra è **universale**: stesso pacchetto indipendentemente da quale delle 4 classi lo riceve, non specifico per classe.
+- **Vincolo di scarsità**: **un solo personaggio per account** può avere la sottoclasse lavorativa attiva, in totale — non per-tipo, anche se in futuro esistessero più pacchetti lavorativi diversi tra cui scegliere. Un flag a livello di account, non di personaggio, è sufficiente a implementarlo.
+- **Costo**: nessuno. A differenza delle altre abilità del framework, non si compra con EXP/HONOR — la scarsità è già garantita dal vincolo account, un costo aggiuntivo sarebbe ridondante. Assegnazione **gratuita**.
+- **Accesso oggi**: solo comando riservato allo staff (GM), stessa logica di separazione trigger/logica già prevista per il respec — la funzione di assegnazione deve restare indipendente da come viene invocata, per poter aggiungere in futuro un trigger via item/NPC senza riscriverla.
+- **Trasferimento/rilascio**: il GM può liberare lo slot da un personaggio e assegnarlo a un altro dello stesso account. Quando succede, le skill lavorative extra del personaggio che lo perde **si azzerano** (il cap torna a quello normale della classe, coerente col comportamento nativo di un downgrade di cap). Se e in quale percentuale i punti skill già investiti si trasferiscano al nuovo personaggio è una calibrazione **non ancora decisa** — placeholder per una sessione futura.
+- **Cambio pacchetto sullo stesso personaggio**: previsto anche il caso in cui lo stesso personaggio cambi pacchetto lavorativo (rilevante quando in futuro esisteranno più pacchetti tra cui scegliere) invece di spostare lo slot a un altro pg — trattato come lo stesso tipo di "trasferimento": le skill del vecchio pacchetto si azzerano, e la percentuale di punti eventualmente restituiti verso il nuovo pacchetto è la stessa calibrazione futura non ancora decisa di cui sopra.
+
 ### Non ancora deciso (fuori scope di questo giro)
 
 - Nomi/temi delle 4 classi e contenuto reale di ogni evoluzione (numero e effetto di passive/pvp/pve/ultimate).
 - Valore della soglia EXP+HONOR per sbloccare l'evoluzione.
 - Percentuali di rimborso del respec.
 - UI lato client per navigare/acquistare l'albero di abilità (da progettare in `ClassicUO/custom-docs/design/` quando si passa al contenuto reale — vedi nota sul vincolo del client, non bloccante, in `README.md`).
+- Numero esatto di skill lavorative extra (3-5) e quali skill compongono il pacchetto lavorativo universale.
+- Numero esatto di skill permesse per classe normale (indicativamente 6-8).
+- Percentuale/regola di trasferimento dei punti skill lavorativi già investiti quando lo slot passa a un altro personaggio.
+- Il resto del sistema di economia di cui questa sottoclasse è solo il primo tassello.
