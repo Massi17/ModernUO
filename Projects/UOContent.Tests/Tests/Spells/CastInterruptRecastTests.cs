@@ -80,11 +80,85 @@ public class CastInterruptRecastTests
         // interrupting A.
         Assert.True(b.TargetFirstCommitted);
 
-        // A's fizzle-charge is wired up in the next task, not this one.
-        Assert.Equal(SpellState.Casting, a.State);
+        // A's fizzle-charge fires right here, once B's deferred resolution begins (Task 4).
+        Assert.Equal(SpellState.None, a.State);
 
         b.Disturb(DisturbType.Kill); // stop the pending cast timer
         caster.Delete();
         target.Delete();
+    }
+
+    [Fact]
+    public void InterruptedSpell_FizzlesAndChargesOnlyWhenNewSpellsTargetCommits()
+    {
+        var caster = new Mobile(World.NewMobile);
+        caster.DefaultMobileInit();
+        caster.RawInt = 100;
+        caster.Mana = 100;
+        caster.MoveToWorld(new Point3D(1000, 1000, 0), Map.Felucca);
+
+        var target = new Mobile(World.NewMobile);
+        target.DefaultMobileInit();
+        target.MoveToWorld(new Point3D(1001, 1000, 0), Map.Felucca);
+
+        var a = new MagicArrowSpell(caster) { State = SpellState.Casting };
+        caster.Spell = a;
+
+        var manaBeforeCast = caster.Mana;
+        var aManaCost = a.ScaleMana(a.GetMana());
+
+        var b = new MagicArrowSpell(caster);
+        b.Cast();
+
+        // Still nothing charged just from pressing B - matches Task 2's gate change.
+        Assert.Equal(SpellState.Casting, a.State);
+        Assert.Equal(manaBeforeCast, caster.Mana);
+
+        var spellTarget = (SpellTarget<Mobile>)caster.Target;
+        spellTarget.CheckLOS = false;
+        spellTarget.Invoke(caster, target);
+
+        // Clicking B's target commits it - A fizzles and pays right here.
+        Assert.Equal(SpellState.None, a.State);
+        Assert.Equal(manaBeforeCast - aManaCost, caster.Mana);
+
+        // Defensive fix: disturbing A must not wipe out Caster.Spell now that it points at B.
+        Assert.Same(b, caster.Spell);
+        Assert.True(b.TargetFirstCommitted);
+
+        b.Disturb(DisturbType.Kill); // stop the pending cast timer
+        caster.Delete();
+        target.Delete();
+    }
+
+    [Fact]
+    public void ChainedInterrupt_SettlesPendingObligationImmediately()
+    {
+        var caster = new Mobile(World.NewMobile);
+        caster.DefaultMobileInit();
+        caster.RawInt = 100;
+        caster.Mana = 100;
+        caster.MoveToWorld(new Point3D(1000, 1000, 0), Map.Felucca);
+
+        var a = new MagicArrowSpell(caster) { State = SpellState.Casting };
+        caster.Spell = a;
+
+        var manaBeforeCast = caster.Mana;
+        var aManaCost = a.ScaleMana(a.GetMana());
+
+        var b = new MagicArrowSpell(caster);
+        b.Cast(); // B interrupts A - A remembered, not yet charged
+
+        var c = new MagicArrowSpell(caster);
+        c.Cast(); // C interrupts B before B's own target was ever clicked
+
+        // B's own click will never come now - its pending obligation to fizzle A must be
+        // settled immediately once C actually commits, not left to evaporate.
+        Assert.Equal(SpellState.None, a.State);
+        Assert.Equal(manaBeforeCast - aManaCost, caster.Mana);
+        Assert.Same(c, caster.Spell);
+
+        c.Disturb(DisturbType.Kill); // stop the pending cast timer
+        caster.Delete();
     }
 }

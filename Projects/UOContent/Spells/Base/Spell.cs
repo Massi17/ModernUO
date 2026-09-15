@@ -432,7 +432,11 @@ namespace Server.Spells
 
             var wasCasting = IsCasting; // Copy SpellState before resetting it to none
             State = SpellState.None;
-            Caster.Spell = null;
+
+            if (Caster.Spell == this)
+            {
+                Caster.Spell = null;
+            }
 
             OnDisturb(type, wasCasting);
 
@@ -458,6 +462,14 @@ namespace Server.Spells
                     // fix for that; this just makes the cursor disappear immediately instead
                     // of lingering, clickable but inert, until it times out on its own.
                     Target.Cancel(Caster);
+                }
+                else if (type == DisturbType.NewCast)
+                {
+                    // Not TargetFirst (or a TargetFirst cast still sitting on its own free,
+                    // uncommitted cursor - handled above) but interrupted by a new cast: the
+                    // caster already had resources committed to this cast attempt, so the new
+                    // cast fizzling it still charges.
+                    ConsumeCastingResources();
                 }
             }
             else
@@ -536,6 +548,13 @@ namespace Server.Spells
         /// </summary>
         public void BeginTargetFirstDelay(Action onResolve)
         {
+            if (_interruptedSpell != null)
+            {
+                var interrupted = _interruptedSpell;
+                _interruptedSpell = null;
+                interrupted.Disturb(DisturbType.NewCast);
+            }
+
             SayMantra();
 
             var castDelay = GetCastDelay();
@@ -751,6 +770,13 @@ namespace Server.Spells
                         State = SpellState.Casting;
                         Caster.Spell = this;
                         _interruptedSpell = interruptedSpell;
+
+                        if (interruptedSpell?._interruptedSpell != null)
+                        {
+                            var chained = interruptedSpell._interruptedSpell;
+                            interruptedSpell._interruptedSpell = null;
+                            chained.Disturb(DisturbType.NewCast);
+                        }
 
                         if (UsesDeferredCast)
                         {
