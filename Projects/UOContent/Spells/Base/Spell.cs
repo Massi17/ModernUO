@@ -34,6 +34,24 @@ namespace Server.Spells
         /// </summary>
         private bool _targetFirstCommitted;
 
+        /// <summary>
+        /// The spell this cast interrupted, if any - remembered so its cost can be charged
+        /// once this cast's own target click commits, instead of the moment it merely
+        /// started. See custom-docs/specs/2026-09-15-cast-interrupt-recast-design.md.
+        /// </summary>
+#pragma warning disable CS0649
+        private Spell _interruptedSpell;
+#pragma warning restore CS0649
+
+        /// <summary>
+        /// True when this cast uses the cursor-first, target-delayed flow: either because
+        /// the spell itself opts in via <see cref="TargetFirst"/>, or because it's
+        /// interrupting an already in-progress cast - in which case the deferred flow is
+        /// what lets the interrupted spell be fizzled at commit instead of blocking
+        /// outright.
+        /// </summary>
+        public bool UsesDeferredCast => TargetFirst || _interruptedSpell != null;
+
         public Spell(Mobile caster, Item scroll, SpellInfo info)
         {
             Caster = caster;
