@@ -2524,9 +2524,12 @@ namespace Server.Mobiles
         {
             AIObject?.AITimer.Stop();
 
-            if (ForcedAI != null)
+            // Read once: each read constructs an AI whose ctor may start its timer.
+            var forced = ForcedAI;
+
+            if (forced != null)
             {
-                AIObject = ForcedAI;
+                AIObject = forced;
                 return;
             }
 
@@ -2733,21 +2736,17 @@ namespace Server.Mobiles
                 aggressor.Aggressors.Add(AggressorInfo.Create(this, aggressor, true));
             }
 
-            var ct = _controlOrder;
+            var toldToStandDown = _controlled && _controlMaster != null && Commandable &&
+                                  BaseAI.IsStandDownOrder(_controlOrder);
 
-            if (AIObject != null)
+            if (StandsDownOnCommand && toldToStandDown)
             {
-                if (!StandsDownOnCommand || !BaseAI.IsStandDownOrder(ct))
-                {
-                    AIObject.OnAggressiveAction(aggressor);
-                }
-                else
-                {
-                    AIObject.DebugSay("I'm being attacked but my master told me not to fight.");
-                    Warmode = false;
-                    return;
-                }
+                AIObject?.DebugSay("I'm being attacked but my master told me not to fight.");
+                Warmode = false;
+                return;
             }
+
+            AIObject?.OnAggressiveAction(aggressor);
 
             StopFlee();
 
@@ -2764,7 +2763,7 @@ namespace Server.Mobiles
             }
 
             // Only reachable when the pet does not stand down: the orders above returned early.
-            if (aggressor.ChangingCombatant && (_controlled || _summoned) && BaseAI.IsStandDownOrder(ct))
+            if (aggressor.ChangingCombatant && toldToStandDown)
             {
                 IssueOrder(OrderType.Attack, null, aggressor);
             }
@@ -3102,13 +3101,20 @@ namespace Server.Mobiles
                 pack?.DisplayTo(from);
             }
 
-            if (DeathAdderCharmable && from.CanBeHarmful(this, false))
+            if (DeathAdderCharmable && from.CanBeHarmful(this, false) &&
+                SummonFamiliarSpell.Table.TryGetValue(from, out var bc) && bc is DeathAdder { Deleted: false } deathAddr &&
+                deathAddr.Map == from.Map)
             {
-                if (SummonFamiliarSpell.Table.TryGetValue(from, out var bc) && (bc as DeathAdder)?.Deleted == false)
+                if (from.NetState.HasProtocolChanges(ProtocolChanges.Version7000))
+                {
+                    from.SendLocalizedMessage(1114362); // You charm the snake.  Select a target to attack.
+                }
+                else
                 {
                     from.SendAsciiMessage("You charm the snake.  Select a target to attack.");
-                    from.Target = new DeathAdderCharmTarget(this);
                 }
+
+                from.Target = new DeathAdderCharmTarget(this);
             }
 
             if (MLQuestSystem.Enabled && CanGiveMLQuest && from is PlayerMobile mobile)
