@@ -13,7 +13,7 @@ Explicitly out of scope for this pass: the spell/ability that grants the shield,
 `Projects/Server/Mobiles/Mobile.cs`, next to the existing `MeleeDamageAbsorb` (line 478 today):
 
 ```csharp
-public int MagicDamageAbsorb { get; set; }
+public int MagicShieldAbsorb { get; set; }
 ```
 
 A plain field, no behavior attached — same shape as the existing precedent. Everything else (apply/deplete/expire/notify) lives in UOContent.
@@ -31,7 +31,7 @@ public static class MagicShield
     {
         Clear(m); // replace semantics: any prior shield is dropped, not stacked
 
-        m.MagicDamageAbsorb = points;
+        m.MagicShieldAbsorb = points;
         NotifyClient(m);
 
         if (duration is { } d)
@@ -48,9 +48,9 @@ public static class MagicShield
             token.Cancel();
         }
 
-        if (m.MagicDamageAbsorb != 0)
+        if (m.MagicShieldAbsorb != 0)
         {
-            m.MagicDamageAbsorb = 0;
+            m.MagicShieldAbsorb = 0;
             NotifyClient(m);
         }
     }
@@ -59,16 +59,16 @@ public static class MagicShield
     // land on real HP after the shield has taken its share.
     public static int Absorb(Mobile target, int damage)
     {
-        if (target.MagicDamageAbsorb <= 0)
+        if (target.MagicShieldAbsorb <= 0)
         {
             return damage;
         }
 
-        var absorbed = Math.Min(target.MagicDamageAbsorb, damage);
-        target.MagicDamageAbsorb -= absorbed;
+        var absorbed = Math.Min(target.MagicShieldAbsorb, damage);
+        target.MagicShieldAbsorb -= absorbed;
         NotifyClient(target);
 
-        if (target.MagicDamageAbsorb == 0)
+        if (target.MagicShieldAbsorb == 0)
         {
             Clear(target); // cancels the now-irrelevant expiry timer
         }
@@ -112,20 +112,20 @@ No changes to `Projects/Server/Network/`. `0xA1`/`0xA2`/`0xA3` (Hits/Mana/Stam) 
 New packet, defined entirely in `Projects/UOContent/` as a `Packet` subclass (no `Projects/Server/` changes needed beyond the `Mobile` field above — `Packet` and `NetState.SendPacket` are already public):
 
 - Sub-command ID: pick an unused value under `0xBF` (verify against ModernUO's current sub-command table at implementation time — not enumerated here to avoid the doc going stale).
-- Payload: `Serial` (4 bytes) + `MagicDamageAbsorb` (2 bytes, same compact width as the existing Hits attribute encoding).
+- Payload: `Serial` (4 bytes) + `MagicShieldAbsorb` (2 bytes, same compact width as the existing Hits attribute encoding).
 
-`NotifyClient(m)` sends this to every `NetState` that currently has `m` in view (same "who can see this mobile" lookup the engine already uses for broadcasting other Mobile updates) — called from `Apply`, `Absorb` (on every partial deplete, not just on full clear), and `Clear`. Additionally: when a mobile with `MagicDamageAbsorb > 0` newly enters another player's view, resend once so latecomers see the shield already in place (hook alongside wherever the standard HP update already gets (re)sent on enter-view).
+`NotifyClient(m)` sends this to every `NetState` that currently has `m` in view (same "who can see this mobile" lookup the engine already uses for broadcasting other Mobile updates) — called from `Apply`, `Absorb` (on every partial deplete, not just on full clear), and `Clear`. Additionally: when a mobile with `MagicShieldAbsorb > 0` newly enters another player's view, resend once so latecomers see the shield already in place (hook alongside wherever the standard HP update already gets (re)sent on enter-view).
 
 ## Testing
 
 `Projects/UOContent.Tests/Tests/Custom/MagicShieldTests.cs` (xUnit, `[Fact]`, `Collection("Sequential UOContent Tests")` — no tiledata dependency, this is pure state/logic):
 
-- `Apply` on a clean Mobile sets `MagicDamageAbsorb` to the requested points.
+- `Apply` on a clean Mobile sets `MagicShieldAbsorb` to the requested points.
 - `Apply` while a shield is already active replaces it (old points and timer gone, new points/duration in effect).
 - `Absorb` with damage less than the pool: pool decreases by the damage amount, returned value is 0 (nothing reaches real HP).
 - `Absorb` with damage exceeding the pool: pool goes to 0, returned value is the overflow (`damage - originalPool`).
 - `Absorb` on a Mobile with no shield: returns the damage unchanged, no-op otherwise.
-- Duration expiry: `Apply` with a duration, advance the timer wheel past it without dealing damage, `MagicDamageAbsorb` is back to 0.
+- Duration expiry: `Apply` with a duration, advance the timer wheel past it without dealing damage, `MagicShieldAbsorb` is back to 0.
 - Melee/weapon damage path is untouched by any of this — no assertion needed here since `MagicShield.Absorb` is only ever called from `SpellHelper.Damage()`; a regression would show up as a `BaseWeapon`/melee test never calling it, not as a `MagicShieldTests` failure.
 
 Packet encoding: a `MagicShieldPacketTests.cs` alongside the existing packet-encoding tests (mirrors `EquipmentPacketTests.cs`/`MobilePacketTests.cs` in `Server.Tests`) verifying the Serial+points byte layout.

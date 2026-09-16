@@ -4,7 +4,7 @@
 
 **Goal:** Build the server-side "magic shield" primitive — a depletable, spell-damage-only absorb pool on `Mobile`, with a client-notification packet — as a reusable engine piece, not yet wired to any spell/ability.
 
-**Architecture:** A new `Mobile.MagicDamageAbsorb` int property (mirrors the existing `MeleeDamageAbsorb` pattern) holds the pool. A static `MagicShield` class in UOContent owns apply/deplete/expire and client notification. Three insertion points in `SpellHelper.cs` route spell damage through `MagicShield.Absorb` before it reaches `Mobile.Damage()`/`AOS.Damage()`. Client notification is a new `0xBF` sub-command packet, broadcast directly to in-range watchers (not through the `MobileDelta`/`ProcessDelta` queue).
+**Architecture:** A new `Mobile.MagicShieldAbsorb` int property (mirrors the existing `MeleeDamageAbsorb` pattern) holds the pool. A static `MagicShield` class in UOContent owns apply/deplete/expire and client notification. Three insertion points in `SpellHelper.cs` route spell damage through `MagicShield.Absorb` before it reaches `Mobile.Damage()`/`AOS.Damage()`. Client notification is a new `0xBF` sub-command packet, broadcast directly to in-range watchers (not through the `MobileDelta`/`ProcessDelta` queue).
 
 **Tech Stack:** C# / .NET 10, xUnit (`[Fact]`/`[Theory]`), ModernUO's `SpanWriter`/`Packet` packet-encoding conventions.
 
@@ -30,14 +30,14 @@
 - Test: `Projects/Server.Tests/Tests/Network/Packets/Outgoing/MagicShieldPacketTests.cs`
 
 **Interfaces:**
-- Produces: `Mobile.MagicDamageAbsorb` (`int`, get/set, default 0). `NetState.SendMagicShield(Serial serial, int points)` extension method — Task 2 calls this from `MagicShield.NotifyClient`.
+- Produces: `Mobile.MagicShieldAbsorb` (`int`, get/set, default 0). `NetState.SendMagicShield(Serial serial, int points)` extension method — Task 2 calls this from `MagicShield.NotifyClient`.
 
-- [ ] **Step 1: Add the `Mobile.MagicDamageAbsorb` property**
+- [ ] **Step 1: Add the `Mobile.MagicShieldAbsorb` property**
 
 In `Projects/Server/Mobiles/Mobile.cs`, immediately after the existing `MeleeDamageAbsorb` property (search for `MeleeDamageAbsorb` — it's a plain auto-property with no attributes):
 
 ```csharp
-public int MagicDamageAbsorb { get; set; }
+public int MagicShieldAbsorb { get; set; }
 ```
 
 No test for this step alone — it's a bare field, exercised by Task 2's tests once `MagicShield` reads/writes it.
@@ -152,7 +152,7 @@ Run: `dotnet test Projects/Server.Tests` — confirm no regressions elsewhere.
 
 ```bash
 git add Projects/Server/Mobiles/Mobile.cs Projects/Server/Network/Packets/OutgoingMagicShieldPackets.cs Projects/Server.Tests/Tests/Network/Packets/Outgoing/MagicShieldPackets.cs Projects/Server.Tests/Tests/Network/Packets/Outgoing/MagicShieldPacketTests.cs
-git commit -m "feat: add MagicDamageAbsorb field and magic-shield notification packet"
+git commit -m "feat: add MagicShieldAbsorb field and magic-shield notification packet"
 ```
 
 ---
@@ -164,7 +164,7 @@ git commit -m "feat: add MagicDamageAbsorb field and magic-shield notification p
 - Test: `Projects/UOContent.Tests/Tests/Custom/MagicShieldTests.cs`
 
 **Interfaces:**
-- Consumes: `Mobile.MagicDamageAbsorb` (Task 1), `NetState.SendMagicShield(Serial, int)` (Task 1), `Map.GetClientsInRange(Point3D)` (engine), `Timer.StartTimer(TimeSpan, Action, out TimerExecutionToken)` (engine), `TimerExecutionToken.Cancel()` (engine).
+- Consumes: `Mobile.MagicShieldAbsorb` (Task 1), `NetState.SendMagicShield(Serial, int)` (Task 1), `Map.GetClientsInRange(Point3D)` (engine), `Timer.StartTimer(TimeSpan, Action, out TimerExecutionToken)` (engine), `TimerExecutionToken.Cancel()` (engine).
 - Produces: `MagicShield.Apply(Mobile m, int points, TimeSpan? duration = null)`, `MagicShield.Clear(Mobile m)`, `MagicShield.Absorb(Mobile target, int damage) -> int` (returns damage still owed to real HP). Task 3 calls `Absorb`.
 
 - [ ] **Step 1: Write the failing tests**
@@ -202,7 +202,7 @@ public class MagicShieldTests
 
         MagicShield.Apply(m, 50);
 
-        Assert.Equal(50, m.MagicDamageAbsorb);
+        Assert.Equal(50, m.MagicShieldAbsorb);
 
         m.Delete();
     }
@@ -216,7 +216,7 @@ public class MagicShieldTests
         MagicShield.Apply(m, 50);
         MagicShield.Apply(m, 20);
 
-        Assert.Equal(20, m.MagicDamageAbsorb);
+        Assert.Equal(20, m.MagicShieldAbsorb);
 
         m.Delete();
     }
@@ -231,7 +231,7 @@ public class MagicShieldTests
         var remaining = MagicShield.Absorb(m, 30);
 
         Assert.Equal(0, remaining);
-        Assert.Equal(20, m.MagicDamageAbsorb);
+        Assert.Equal(20, m.MagicShieldAbsorb);
 
         m.Delete();
     }
@@ -246,7 +246,7 @@ public class MagicShieldTests
         var remaining = MagicShield.Absorb(m, 70);
 
         Assert.Equal(20, remaining);
-        Assert.Equal(0, m.MagicDamageAbsorb);
+        Assert.Equal(0, m.MagicShieldAbsorb);
 
         m.Delete();
     }
@@ -260,7 +260,7 @@ public class MagicShieldTests
         var remaining = MagicShield.Absorb(m, 40);
 
         Assert.Equal(40, remaining);
-        Assert.Equal(0, m.MagicDamageAbsorb);
+        Assert.Equal(0, m.MagicShieldAbsorb);
 
         m.Delete();
     }
@@ -273,11 +273,11 @@ public class MagicShieldTests
         MagicShield.Apply(m, 50, TimeSpan.FromSeconds(5));
 
         MagicShield.Clear(m);
-        Assert.Equal(0, m.MagicDamageAbsorb);
+        Assert.Equal(0, m.MagicShieldAbsorb);
 
         // Advancing past the original duration must not resurrect/re-clear a stale pool.
         RunFor(6000);
-        Assert.Equal(0, m.MagicDamageAbsorb);
+        Assert.Equal(0, m.MagicShieldAbsorb);
 
         m.Delete();
     }
@@ -289,11 +289,11 @@ public class MagicShieldTests
         m.DefaultMobileInit();
         MagicShield.Apply(m, 50, TimeSpan.FromSeconds(5));
 
-        Assert.Equal(50, m.MagicDamageAbsorb);
+        Assert.Equal(50, m.MagicShieldAbsorb);
 
         RunFor(6000);
 
-        Assert.Equal(0, m.MagicDamageAbsorb);
+        Assert.Equal(0, m.MagicShieldAbsorb);
 
         m.Delete();
     }
@@ -324,7 +324,7 @@ public static class MagicShield
     {
         Clear(m);
 
-        m.MagicDamageAbsorb = points;
+        m.MagicShieldAbsorb = points;
         NotifyClient(m);
 
         if (duration is { } d)
@@ -341,25 +341,25 @@ public static class MagicShield
             token.Cancel();
         }
 
-        if (m.MagicDamageAbsorb != 0)
+        if (m.MagicShieldAbsorb != 0)
         {
-            m.MagicDamageAbsorb = 0;
+            m.MagicShieldAbsorb = 0;
             NotifyClient(m);
         }
     }
 
     public static int Absorb(Mobile target, int damage)
     {
-        if (target.MagicDamageAbsorb <= 0 || damage <= 0)
+        if (target.MagicShieldAbsorb <= 0 || damage <= 0)
         {
             return damage;
         }
 
-        var absorbed = Math.Min(target.MagicDamageAbsorb, damage);
-        target.MagicDamageAbsorb -= absorbed;
+        var absorbed = Math.Min(target.MagicShieldAbsorb, damage);
+        target.MagicShieldAbsorb -= absorbed;
         NotifyClient(target);
 
-        if (target.MagicDamageAbsorb == 0)
+        if (target.MagicShieldAbsorb == 0)
         {
             Clear(target);
         }
@@ -379,7 +379,7 @@ public static class MagicShield
         {
             if (ns.Mobile.CanSee(m))
             {
-                ns.SendMagicShield(m.Serial, m.MagicDamageAbsorb);
+                ns.SendMagicShield(m.Serial, m.MagicShieldAbsorb);
             }
         }
     }
@@ -437,7 +437,7 @@ public class MagicShieldSpellDamageTests
 
         SpellHelper.Damage(TimeSpan.Zero, target, 30);
 
-        Assert.Equal(20, target.MagicDamageAbsorb);
+        Assert.Equal(20, target.MagicShieldAbsorb);
         Assert.Equal(100, target.Hits); // fully absorbed, real HP untouched
 
         target.Delete();
@@ -453,7 +453,7 @@ public class MagicShieldSpellDamageTests
 
         SpellHelper.Damage(TimeSpan.Zero, target, 70);
 
-        Assert.Equal(0, target.MagicDamageAbsorb);
+        Assert.Equal(0, target.MagicShieldAbsorb);
         Assert.Equal(80, target.Hits); // 20 points overflow past the shield
 
         target.Delete();
@@ -470,7 +470,7 @@ public class MagicShieldSpellDamageTests
         // 100% fire, no resistance on a bare test Mobile — full 30 lands as fire damage pre-shield.
         SpellHelper.Damage(TimeSpan.Zero, target, 30, 0, 100, 0, 0, 0);
 
-        Assert.Equal(20, target.MagicDamageAbsorb);
+        Assert.Equal(20, target.MagicShieldAbsorb);
         Assert.Equal(100, target.Hits);
 
         target.Delete();
@@ -486,7 +486,7 @@ public class MagicShieldSpellDamageTests
 
         target.Damage(30); // direct Mobile.Damage call, the melee/generic path
 
-        Assert.Equal(50, target.MagicDamageAbsorb); // untouched
+        Assert.Equal(50, target.MagicShieldAbsorb); // untouched
         Assert.Equal(70, target.Hits);
 
         target.Delete();
@@ -569,7 +569,7 @@ Expected: PASS (all 4 tests).
 
 - [ ] **Step 7: Full UOContent.Tests run and commit**
 
-Run: `dotnet test Projects/UOContent.Tests` — pay attention to any spell-damage test that starts failing (a sign the insertion moved damage math it shouldn't have, e.g. inserted in the wrong branch or before a check that also needs the original `damage`/`dmg` value); every existing test has `MagicDamageAbsorb == 0` on its targets, so `MagicShield.Absorb` must be a true no-op for all of them (see `AbsorbIsANoOp_WhenThereIsNoShield` in Task 2) — a regression here means the hook changed behavior for the *unshielded* case, which the design never intended.
+Run: `dotnet test Projects/UOContent.Tests` — pay attention to any spell-damage test that starts failing (a sign the insertion moved damage math it shouldn't have, e.g. inserted in the wrong branch or before a check that also needs the original `damage`/`dmg` value); every existing test has `MagicShieldAbsorb == 0` on its targets, so `MagicShield.Absorb` must be a true no-op for all of them (see `AbsorbIsANoOp_WhenThereIsNoShield` in Task 2) — a regression here means the hook changed behavior for the *unshielded* case, which the design never intended.
 
 ```bash
 git add Projects/UOContent/Spells/Base/SpellHelper.cs Projects/UOContent.Tests/Tests/Custom/MagicShieldSpellDamageTests.cs
