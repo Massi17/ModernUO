@@ -958,7 +958,9 @@ namespace Server.Spells
 
                 bcFrom?.AlterSpellDamageTo(target, ref damageGiven);
                 bcTarget?.AlterSpellDamageFrom(from, ref damageGiven);
+                var rawDamage = damageGiven;
                 damageGiven = MagicShield.Absorb(target, damageGiven);
+                PvpDamageTest.Report(from, target, rawDamage - damageGiven, damageGiven);
 
                 target.Damage(damageGiven, from);
 
@@ -1034,11 +1036,14 @@ namespace Server.Spells
                     dmg -= dmg * feintReduction / 100;
                 }
 
+                var rawDmg = dmg;
                 dmg = MagicShield.Absorb(target, dmg);
+                var absorbed = rawDmg - dmg;
 
                 StaminaSystem.DFA = dfa;
 
                 var damageGiven = AOS.Damage(target, from, dmg, phys, fire, cold, pois, nrgy, chaos);
+                PvpDamageTest.Report(from, target, absorbed, damageGiven);
                 Mysticism.SpellPlagueSpell.OnMobileDamaged(target);
 
                 StaminaSystem.DFA = DFAlgorithm.Standard;
@@ -1113,7 +1118,9 @@ namespace Server.Spells
             {
                 (m_From as BaseCreature)?.AlterSpellDamageTo(m_Target, ref m_Damage);
                 (m_Target as BaseCreature)?.AlterSpellDamageFrom(m_From, ref m_Damage);
+                var rawDamage = m_Damage;
                 m_Damage = MagicShield.Absorb(m_Target, m_Damage);
+                PvpDamageTest.Report(m_From, m_Target, rawDamage - m_Damage, m_Damage);
 
                 m_Target.Damage(m_Damage);
                 m_Spell?.RemoveDelayedDamageContext(m_Target);

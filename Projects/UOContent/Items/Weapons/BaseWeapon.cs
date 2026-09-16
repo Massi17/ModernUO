@@ -2007,6 +2007,8 @@ public abstract partial class BaseWeapon
             this is BaseRanged
         );
 
+        Custom.PvpDamageTest.Report(attacker, defender, 0, damageGiven);
+
         if (damageGiven > 0)
         {
             var propertyBonus = move?.GetPropertyBonus(attacker) ?? 1.0;
