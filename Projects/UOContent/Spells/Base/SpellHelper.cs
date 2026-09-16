@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Server.Custom;
 using Server.Engines.CannedEvil;
 using Server.Engines.ConPVP;
 using Server.Engines.PartySystem;
@@ -957,6 +958,7 @@ namespace Server.Spells
 
                 bcFrom?.AlterSpellDamageTo(target, ref damageGiven);
                 bcTarget?.AlterSpellDamageFrom(from, ref damageGiven);
+                damageGiven = MagicShield.Absorb(target, damageGiven);
 
                 target.Damage(damageGiven, from);
 
@@ -1031,6 +1033,8 @@ namespace Server.Spells
                     // example: 35 damage * 50 / 100 = 17 damage
                     dmg -= dmg * feintReduction / 100;
                 }
+
+                dmg = MagicShield.Absorb(target, dmg);
 
                 StaminaSystem.DFA = dfa;
 
@@ -1109,6 +1113,7 @@ namespace Server.Spells
             {
                 (m_From as BaseCreature)?.AlterSpellDamageTo(m_Target, ref m_Damage);
                 (m_Target as BaseCreature)?.AlterSpellDamageFrom(m_From, ref m_Damage);
+                m_Damage = MagicShield.Absorb(m_Target, m_Damage);
 
                 m_Target.Damage(m_Damage);
                 m_Spell?.RemoveDelayedDamageContext(m_Target);
