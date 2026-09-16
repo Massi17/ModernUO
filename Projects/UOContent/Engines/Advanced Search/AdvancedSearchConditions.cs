@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
 using Server.Commands.Generic;
@@ -248,14 +249,14 @@ public static class AdvancedSearchConditions
 
         if (property.Type == typeof(float))
         {
-            if (!float.TryParse(value, null, out var f))
+            if (!float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var f))
             {
                 return null;
             }
 
             parsed = f;
         }
-        else if (!double.TryParse(value, null, out parsed))
+        else if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out parsed))
         {
             return null;
         }

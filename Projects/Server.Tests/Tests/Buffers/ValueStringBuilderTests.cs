@@ -1,3 +1,4 @@
+using System.Globalization;
 using Server.Text;
 using Xunit;
 
@@ -43,7 +44,10 @@ public class ValueStringBuilderTests
         sb.Append($"Hi, this is {value}.");
         sb.Append(" I am a string.");
 
-        Assert.Equal($"Hi, this is {value}. I am a string.", sb.ToString());
+        Assert.Equal(
+            string.Create(CultureInfo.InvariantCulture, $"Hi, this is {value}. I am a string."),
+            sb.ToString()
+        );
         sb.Dispose();
     }
 

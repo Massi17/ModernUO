@@ -2,6 +2,7 @@ using Server;
 using Server.Custom.ClassSystem;
 using Server.Items;
 using Server.Mobiles;
+using Server.Tests;
 using Xunit;
 
 namespace UOContent.Tests;
@@ -9,9 +10,11 @@ namespace UOContent.Tests;
 [Collection("Sequential UOContent Tests")]
 public class PlayerClassEquipmentTests
 {
-    [Fact]
+    [SkippableFact]
     public void ForbiddenWeaponCannotBeEquippedAfterClassAssignment()
     {
+        TileDataRequirement.SkipIfMissing();
+
         var pm = new PlayerMobile(World.NewMobile);
         pm.DefaultMobileInit();
         PlayerClassAssignment.AssignClass(pm, "Test", out _);
@@ -24,9 +27,11 @@ public class PlayerClassEquipmentTests
         pm.Delete();
     }
 
-    [Fact]
+    [SkippableFact]
     public void AllowedWeaponCanStillBeEquipped()
     {
+        TileDataRequirement.SkipIfMissing();
+
         var pm = new PlayerMobile(World.NewMobile);
         pm.DefaultMobileInit();
         PlayerClassAssignment.AssignClass(pm, "Test", out _);
@@ -37,9 +42,11 @@ public class PlayerClassEquipmentTests
         pm.Delete();
     }
 
-    [Fact]
+    [SkippableFact]
     public void PlayerWithoutAClassCanEquipAnything()
     {
+        TileDataRequirement.SkipIfMissing();
+
         var pm = new PlayerMobile(World.NewMobile);
         pm.DefaultMobileInit();
 
@@ -49,9 +56,11 @@ public class PlayerClassEquipmentTests
         pm.Delete();
     }
 
-    [Fact]
+    [SkippableFact]
     public void AlreadyEquippedForbiddenItemIsMovedToBackpackWhenClassIsAssigned()
     {
+        TileDataRequirement.SkipIfMissing();
+
         var pm = new PlayerMobile(World.NewMobile);
         pm.DefaultMobileInit();
         pm.AddItem(new Backpack());

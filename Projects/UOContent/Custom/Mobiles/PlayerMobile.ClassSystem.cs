@@ -4,14 +4,14 @@ namespace Server.Mobiles;
 
 public partial class PlayerMobile
 {
-    public override bool OnEquip(Item item)
+    public override bool EquipItem(Item item)
     {
-        if (!PlayerClassEquipment.CanEquip(this, item, out var failureReason))
+        if (item?.Deleted == false && !PlayerClassEquipment.CanEquip(this, item, out var failureReason))
         {
             SendMessage(failureReason);
             return false;
         }
 
-        return base.OnEquip(item);
+        return base.EquipItem(item);
     }
 }

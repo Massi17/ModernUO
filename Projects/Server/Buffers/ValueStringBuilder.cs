@@ -4,6 +4,7 @@
 #nullable enable
 using System;
 using System.Buffers;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -186,7 +187,7 @@ public ref struct ValueStringBuilder
             {
                 var destination = _chars[_length..];
                 int charsWritten;
-                while (!((ISpanFormattable)value).TryFormat(destination, out charsWritten, format, default))
+                while (!((ISpanFormattable)value).TryFormat(destination, out charsWritten, format, CultureInfo.InvariantCulture))
                 {
                     Grow(1);
                     destination = _chars[_length..];
@@ -201,7 +202,7 @@ public ref struct ValueStringBuilder
             }
             else
             {
-                Append(((IFormattable)value).ToString(format, default)); // constrained call avoiding boxing for value types
+                Append(((IFormattable)value).ToString(format, CultureInfo.InvariantCulture)); // constrained call avoiding boxing for value types
             }
         }
         else if (value is not null)
