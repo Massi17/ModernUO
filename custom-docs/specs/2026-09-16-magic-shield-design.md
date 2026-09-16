@@ -84,18 +84,26 @@ public static class MagicShield
 
 `Absorb` bleeds through: if incoming damage exceeds the remaining pool, the shield drops to 0 and the excess still reaches real HP in the same hit — mirrors `MeleeDamageAbsorb`'s existing behavior in Reactive Armor, so both absorb mechanics read the same way to anyone touching this code later.
 
-## Hook point
+## Hook points
 
-`Projects/UOContent/Spells/Base/SpellHelper.cs`, inside `Damage()` (today ~line 958-961), immediately before the existing `target.Damage(damageGiven, from)` call:
+`SpellHelper.Damage()` is not one chokepoint — spell damage reaches `Mobile.Damage()` (or the shared `AOS.Damage()` resistance calculator) through three call sites in `Projects/UOContent/Spells/Base/SpellHelper.cs`, all needing the same one-line insertion:
+
+1. **Simple (non-elemental) immediate damage** — `Damage(Spell, TimeSpan, Mobile, Mobile, double)`, ~line 961, before `target.Damage(damageGiven, from)`.
+2. **Simple (non-elemental) delayed damage** — the private nested `SpellDamageTimer.OnTick()`, ~line 1113, before `m_Target.Damage(m_Damage)`. This does *not* re-enter the method above — it calls `Mobile.Damage()` directly — so it needs its own insertion, not just the one in (1).
+3. **Elemental damage** (phys/fire/cold/pois/nrgy/chaos split — what most AOS-era spells use) — `Damage(Spell, TimeSpan, Mobile, Mobile, double, int, int, int, int, int, int, DFAlgorithm)`, ~line 1037, before `AOS.Damage(target, from, dmg, phys, fire, cold, pois, nrgy, chaos)`, reducing `dmg` first. The delayed variant (`SpellDamageTimerAOS.OnTick()`) re-enters *this same* immediate branch (calls `Damage(spell, TimeSpan.Zero, ...)`), so it's already covered — no separate insertion needed for it.
+
+**`AOS.Damage()` itself must not be touched** — `Projects/UOContent/Misc/AOS.cs` is a shared resistance calculator also called directly by `BaseWeapon`, weapon abilities, poison, traps, and monster melee specials (confirmed by grep across `Projects/UOContent`). Absorbing there would swallow non-magic damage too. The shield reduction has to happen in the spell-only caller (site 3 above) before `AOS.Damage()` is ever invoked.
+
+Each site gets the same shape:
 
 ```csharp
 if (target is Mobile targetMobile)
 {
-    damageGiven = MagicShield.Absorb(targetMobile, damageGiven);
+    damageGiven = MagicShield.Absorb(targetMobile, damageGiven); // or dmg, at site 3
 }
 ```
 
-This is the single chokepoint for all Magery/Necromancy/Spellweaving/Mysticism spell damage — melee, ranged, and monster special abilities (which route through `AlterMeleeDamageFrom`/their own damage calls, not `SpellHelper.Damage()`) are unaffected, matching the "spell damage only" scope decided during design. If a later feature needs shield absorption on a non-`SpellHelper` magic source, that's a new call to `MagicShield.Absorb` at that source's own damage point — the primitive doesn't need to change.
+Monster special abilities (`AlterMeleeDamageFrom`/their own direct damage calls, not `SpellHelper.Damage()`) are unaffected, matching the "spell damage only" scope decided during design. If a later feature needs shield absorption on a non-`SpellHelper` magic source, that's a new call to `MagicShield.Absorb` at that source's own damage point — the primitive doesn't need to change.
 
 ## Network: notifying the client
 
