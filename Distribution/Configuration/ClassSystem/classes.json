@@ -1,0 +1,321 @@
+{
+  "EvolutionThreshold": 1000,
+  "EvolutionRespecRefundPercent": 50,
+  "ClassRespecRefundPercent": 50,
+  "Classes": [
+    {
+      "Id": "Test",
+      "SkillCap": 100,
+      "AllowedSkills": [
+        "Swords",
+        "Tactics",
+        "Anatomy",
+        "Healing",
+        "Parry",
+        "Focus"
+      ],
+      "ForbiddenItemTypeNames": [
+        "Katana"
+      ],
+      "Evolutions": [
+        {
+          "Id": "TestAlpha",
+          "Abilities": [
+            {
+              "Id": "TestAlpha_passive_1",
+              "Category": "Passive",
+              "PaymentOptions": [
+                {
+                  "Exp": 100,
+                  "Honor": 0
+                },
+                {
+                  "Exp": 0,
+                  "Honor": 200
+                }
+              ]
+            },
+            {
+              "Id": "TestAlpha_passive_2",
+              "Category": "Passive",
+              "PaymentOptions": [
+                {
+                  "Exp": 200,
+                  "Honor": 0
+                },
+                {
+                  "Exp": 0,
+                  "Honor": 400
+                }
+              ]
+            },
+            {
+              "Id": "TestAlpha_pvp_1",
+              "Category": "Pvp",
+              "PaymentOptions": [
+                {
+                  "Exp": 0,
+                  "Honor": 200
+                },
+                {
+                  "Exp": 400,
+                  "Honor": 0
+                }
+              ]
+            },
+            {
+              "Id": "TestAlpha_pvp_2",
+              "Category": "Pvp",
+              "PaymentOptions": [
+                {
+                  "Exp": 0,
+                  "Honor": 400
+                },
+                {
+                  "Exp": 800,
+                  "Honor": 0
+                }
+              ]
+            },
+            {
+              "Id": "TestAlpha_pve_1",
+              "Category": "Pve",
+              "PaymentOptions": [
+                {
+                  "Exp": 200,
+                  "Honor": 0
+                },
+                {
+                  "Exp": 0,
+                  "Honor": 400
+                }
+              ]
+            },
+            {
+              "Id": "TestAlpha_pve_2",
+              "Category": "Pve",
+              "PaymentOptions": [
+                {
+                  "Exp": 400,
+                  "Honor": 0
+                },
+                {
+                  "Exp": 0,
+                  "Honor": 800
+                }
+              ]
+            },
+            {
+              "Id": "TestAlpha_ultimate_1",
+              "Category": "Ultimate",
+              "PaymentOptions": [
+                {
+                  "Exp": 1000,
+                  "Honor": 1000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "Id": "TestBeta",
+          "Abilities": [
+            {
+              "Id": "TestBeta_passive_1",
+              "Category": "Passive",
+              "PaymentOptions": [
+                {
+                  "Exp": 100,
+                  "Honor": 0
+                },
+                {
+                  "Exp": 0,
+                  "Honor": 200
+                }
+              ]
+            },
+            {
+              "Id": "TestBeta_passive_2",
+              "Category": "Passive",
+              "PaymentOptions": [
+                {
+                  "Exp": 200,
+                  "Honor": 0
+                },
+                {
+                  "Exp": 0,
+                  "Honor": 400
+                }
+              ]
+            },
+            {
+              "Id": "TestBeta_pvp_1",
+              "Category": "Pvp",
+              "PaymentOptions": [
+                {
+                  "Exp": 0,
+                  "Honor": 200
+                },
+                {
+                  "Exp": 400,
+                  "Honor": 0
+                }
+              ]
+            },
+            {
+              "Id": "TestBeta_pvp_2",
+              "Category": "Pvp",
+              "PaymentOptions": [
+                {
+                  "Exp": 0,
+                  "Honor": 400
+                },
+                {
+                  "Exp": 800,
+                  "Honor": 0
+                }
+              ]
+            },
+            {
+              "Id": "TestBeta_pve_1",
+              "Category": "Pve",
+              "PaymentOptions": [
+                {
+                  "Exp": 200,
+                  "Honor": 0
+                },
+                {
+                  "Exp": 0,
+                  "Honor": 400
+                }
+              ]
+            },
+            {
+              "Id": "TestBeta_pve_2",
+              "Category": "Pve",
+              "PaymentOptions": [
+                {
+                  "Exp": 400,
+                  "Honor": 0
+                },
+                {
+                  "Exp": 0,
+                  "Honor": 800
+                }
+              ]
+            },
+            {
+              "Id": "TestBeta_ultimate_1",
+              "Category": "Ultimate",
+              "PaymentOptions": [
+                {
+                  "Exp": 1000,
+                  "Honor": 1000
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "Id": "TestGamma",
+          "Abilities": [
+            {
+              "Id": "TestGamma_passive_1",
+              "Category": "Passive",
+              "PaymentOptions": [
+                {
+                  "Exp": 100,
+                  "Honor": 0
+                },
+                {
+                  "Exp": 0,
+                  "Honor": 200
+                }
+              ]
+            },
+            {
+              "Id": "TestGamma_passive_2",
+              "Category": "Passive",
+              "PaymentOptions": [
+                {
+                  "Exp": 200,
+                  "Honor": 0
+                },
+                {
+                  "Exp": 0,
+                  "Honor": 400
+                }
+              ]
+            },
+            {
+              "Id": "TestGamma_pvp_1",
+              "Category": "Pvp",
+              "PaymentOptions": [
+                {
+                  "Exp": 0,
+                  "Honor": 200
+                },
+                {
+                  "Exp": 400,
+                  "Honor": 0
+                }
+              ]
+            },
+            {
+              "Id": "TestGamma_pvp_2",
+              "Category": "Pvp",
+              "PaymentOptions": [
+                {
+                  "Exp": 0,
+                  "Honor": 400
+                },
+                {
+                  "Exp": 800,
+                  "Honor": 0
+                }
+              ]
+            },
+            {
+              "Id": "TestGamma_pve_1",
+              "Category": "Pve",
+              "PaymentOptions": [
+                {
+                  "Exp": 200,
+                  "Honor": 0
+                },
+                {
+                  "Exp": 0,
+                  "Honor": 400
+                }
+              ]
+            },
+            {
+              "Id": "TestGamma_pve_2",
+              "Category": "Pve",
+              "PaymentOptions": [
+                {
+                  "Exp": 400,
+                  "Honor": 0
+                },
+                {
+                  "Exp": 0,
+                  "Honor": 800
+                }
+              ]
+            },
+            {
+              "Id": "TestGamma_ultimate_1",
+              "Category": "Ultimate",
+              "PaymentOptions": [
+                {
+                  "Exp": 1000,
+                  "Honor": 1000
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

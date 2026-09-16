@@ -9,13 +9,15 @@ public class SpellTarget<T> : Target, ISpellTarget<T> where T : class, IPoint3D
     private static readonly bool _canTargetItem = typeof(T).IsAssignableFrom(typeof(Item));
 
     private readonly bool _retryOnLos;
+    private readonly bool _notifyOnLos;
     protected readonly ITargetingSpell<T> _spell;
 
     public SpellTarget(
         ITargetingSpell<T> spell,
         TargetFlags flags,
-        bool retryOnLos = false
-    ) : this(spell, false, flags, retryOnLos)
+        bool retryOnLos = false,
+        bool notifyOnLos = false
+    ) : this(spell, false, flags, retryOnLos, notifyOnLos)
     {
     }
 
@@ -23,11 +25,13 @@ public class SpellTarget<T> : Target, ISpellTarget<T> where T : class, IPoint3D
         ITargetingSpell<T> spell,
         bool allowGround = false,
         TargetFlags flags = TargetFlags.None,
-        bool retryOnLos = false
+        bool retryOnLos = false,
+        bool notifyOnLos = false
     ) : base(spell.TargetRange, allowGround, flags)
     {
         _spell = spell;
         _retryOnLos = retryOnLos;
+        _notifyOnLos = notifyOnLos;
     }
 
     public ITargetingSpell<T> Spell => _spell;
@@ -118,6 +122,11 @@ public class SpellTarget<T> : Target, ISpellTarget<T> where T : class, IPoint3D
     {
         if (!_retryOnLos)
         {
+            if (_notifyOnLos)
+            {
+                base.OnTargetOutOfLOS(from, o); // "Target can not be seen." - no retry, cursor stays closed
+            }
+
             return;
         }
 

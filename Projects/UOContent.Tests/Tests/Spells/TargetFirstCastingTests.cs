@@ -1,4 +1,5 @@
 using Server.Spells;
+using Server.Spells.First;
 using Server.Spells.Seventh;
 using Server.Targeting;
 using Xunit;
@@ -44,4 +45,90 @@ public class TargetFirstCastingTests
         caster.Delete();
         target.Delete();
     }
+
+    // Phase 1 (cursor up, target not yet picked) is State.Casting for a deferred-cast spell by
+    // construction, but nothing has actually been committed yet - no mantra, no mana/reagents at
+    // stake. A plain damage hit at this point must not disturb anything: not the state, not the
+    // cursor. This mirrors what already happens for a normal (non-deferred) spell at the
+    // equivalent moment, where the state is State.Sequencing and OnCasterHurt's IsCasting check
+    // never even fires.
+    [Fact]
+    public void TargetFirstSpell_HurtDuringPhase1_DoesNothing()
+    {
+        var caster = new Mobile(World.NewMobile);
+        caster.DefaultMobileInit();
+        caster.Player = true;
+
+        caster.MoveToWorld(new Point3D(1000, 1000, 0), Map.Felucca);
+
+        var spell = new FlameStrikeSpell(caster) { State = SpellState.Casting };
+        caster.Spell = spell;
+
+        var spellTarget = new SpellTarget<Mobile>(spell, TargetFlags.Harmful) { CheckLOS = false };
+        caster.Target = spellTarget;
+
+        spell.OnCasterHurt();
+
+        Assert.Same(spell, caster.Spell);
+        Assert.Equal(SpellState.Casting, spell.State);
+        Assert.Same(spellTarget, caster.Target);
+
+        spell.Disturb(DisturbType.Kill); // stops the pending cursor/timeout cleanly
+        caster.Delete();
+    }
+
+    // Ordinary spells never decoupled BlocksWeaponSwing from BlocksMovement - the default must
+    // keep mirroring it exactly, or every non-TargetFirst spell's weapon-swing gating changes.
+    [Fact]
+    public void BlocksWeaponSwing_DefaultsToMirrorBlocksMovement()
+    {
+        var caster = new Mobile(World.NewMobile);
+        caster.DefaultMobileInit();
+
+        var spell = new MagicArrowSpell(caster);
+
+        Assert.Equal(spell.BlocksMovement, spell.BlocksWeaponSwing); // both false: not casting
+
+        spell.State = SpellState.Casting;
+        Assert.Equal(spell.BlocksMovement, spell.BlocksWeaponSwing); // both true: casting
+
+        caster.Delete();
+    }
+
+    // Flame Strike deliberately decouples the two: movable throughout (BlocksMovement is always
+    // false), but weapon swings must stay allowed during phase 1 (still just aiming) and only
+    // lock out once phase 2 actually commits.
+    [Fact]
+    public void FlameStrike_BlocksWeaponSwing_OnlyOncePhase2Commits()
+    {
+        var caster = new Mobile(World.NewMobile);
+        caster.DefaultMobileInit();
+        var target = new Mobile(World.NewMobile);
+        target.DefaultMobileInit();
+
+        caster.MoveToWorld(new Point3D(1000, 1000, 0), Map.Felucca);
+        target.MoveToWorld(new Point3D(1001, 1000, 0), Map.Felucca);
+
+        var spell = new FlameStrikeSpell(caster) { State = SpellState.Casting };
+        caster.Spell = spell;
+
+        Assert.False(spell.BlocksMovement);    // movable throughout, by design
+        Assert.False(spell.BlocksWeaponSwing); // phase 1: not committed yet, swings still allowed
+
+        var spellTarget = new SpellTarget<Mobile>(spell, TargetFlags.Harmful) { CheckLOS = false };
+        caster.Target = spellTarget;
+        spellTarget.Invoke(caster, target); // click commits phase 2
+
+        Assert.True(spell.TargetFirstCommitted);
+        Assert.True(spell.BlocksWeaponSwing); // phase 2: locked out until fizzle or hit
+
+        spell.Disturb(DisturbType.Kill); // stops the pending cast timer
+        caster.Delete();
+        target.Delete();
+    }
+
+    // NextCombatTime reset on phase-2 commit (BeginTargetFirstDelay) isn't covered by an
+    // automated test: it needs a real equipped BaseWeapon, whose Layer is resolved from
+    // ItemData.Quality (client tile data) - not reliably available in this test host, the same
+    // limitation already noted above for LOS. Covered by manual in-game verification instead.
 }

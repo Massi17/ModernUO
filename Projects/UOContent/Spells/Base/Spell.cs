@@ -89,6 +89,17 @@ namespace Server.Spells
         public virtual bool BlockedByAnimalForm => true;
         public virtual bool BlocksMovement => IsCasting;
 
+        /// <summary>
+        /// Whether the caster's weapon is prevented from swinging right now (checked in
+        /// <see cref="BaseWeapon.OnSwing"/>). Defaults to mirroring <see cref="BlocksMovement"/>
+        /// - today's existing coupled behavior for every ordinary spell. A spell that decouples
+        /// the two (movable while casting, but still locked out of physical attacks for part of
+        /// the cast) overrides this independently. See <c>FlameStrikeSpell</c>, which is
+        /// movable throughout (<c>BlocksMovement => false</c>) but blocks weapon swings only
+        /// once committed to phase 2 (<c>BlocksWeaponSwing => TargetFirstCommitted</c>).
+        /// </summary>
+        public virtual bool BlocksWeaponSwing => BlocksMovement;
+
         public virtual bool CheckNextSpellTime => Scroll is not BaseWand;
 
         public virtual int CastRecoveryBase => 6;
@@ -425,6 +436,20 @@ namespace Server.Spells
                 return;
             }
 
+            if (type == DisturbType.Hurt && UsesDeferredCast && !_targetFirstCommitted)
+            {
+                // Phase 1 of a deferred-cast spell (cursor up, target not yet picked) isn't
+                // actually casting yet in the way a plain hit can interrupt: no mantra played,
+                // no mana/reagents at stake, and the equivalent moment for a normal spell
+                // (cursor up, waiting on Target.Invoke) is already State.Sequencing, which
+                // OnCasterHurt's IsCasting check doesn't reach. A deferred-cast spell is still
+                // State.Casting at this point by construction, so it needs this explicit
+                // exemption to behave the same way. Every other disturb cause (a new cast,
+                // death, an equip/use request) still cancels the cursor via the
+                // UsesDeferredCast branch below.
+                return;
+            }
+
             if (State == SpellState.None || !firstCircle && !Core.AOS && (this as MagerySpell)?.Circle == SpellCircle.First)
             {
                 return;
@@ -599,6 +624,15 @@ namespace Server.Spells
             }
 
             _targetFirstCommitted = true;
+
+            if (BlocksWeaponSwing && Caster.Weapon is BaseWeapon weapon)
+            {
+                // Committing to phase 2 resets the caster's swing timer, same as if they'd
+                // just swung - so a swing that was already due doesn't sneak through in the
+                // same tick, and there's no free instant swing waiting the moment the block
+                // lifts at resolution.
+                Caster.NextCombatTime = Core.TickCount + (long)weapon.GetDelay(Caster).TotalMilliseconds;
+            }
 
             _castTimer = new CastTimer(this, castDelay, onResolve);
 

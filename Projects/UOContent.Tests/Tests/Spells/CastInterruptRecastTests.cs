@@ -167,7 +167,7 @@ public class CastInterruptRecastTests
     }
 
     [Fact]
-    public void InterruptingSpellDisturbedBeforeItsOwnClick_StillChargesTheInterrupted()
+    public void InterruptingSpellHurtBeforeItsOwnClick_DoesNothing()
     {
         var caster = new Mobile(World.NewMobile);
         caster.DefaultMobileInit();
@@ -179,19 +179,24 @@ public class CastInterruptRecastTests
         caster.Spell = a;
 
         var manaBeforeCast = caster.Mana;
-        var aManaCost = a.ScaleMana(a.GetMana());
 
         var b = new MagicArrowSpell(caster);
         b.Cast(); // B interrupts A - A remembered, not yet charged
 
-        // B itself gets disturbed (e.g. took damage) before ever clicking its own target -
-        // B's cursor should be cancelled (it never committed to anything of its own), but its
-        // pending obligation to fizzle A must still be settled, not dropped.
+        // B itself takes a plain hit before ever clicking its own target. Phase 1 isn't really
+        // "casting" yet - no mantra, no mana/reagents at stake for B - so a hit here must be a
+        // pure no-op: B keeps its cursor, and A's pending fizzle-and-charge obligation stays
+        // pending right along with it, exactly as if nothing had happened. It only gets settled
+        // when B itself actually resolves one way or another (its own click, or a disturb type
+        // other than a plain phase-1 Hurt).
         b.Disturb(DisturbType.Hurt, false, true);
 
-        Assert.Equal(SpellState.None, a.State);
-        Assert.Equal(manaBeforeCast - aManaCost, caster.Mana);
+        Assert.Equal(SpellState.Casting, b.State);
+        Assert.Equal(SpellState.Casting, a.State);
+        Assert.Equal(manaBeforeCast, caster.Mana);
+        Assert.Same(b, caster.Spell);
 
+        b.Disturb(DisturbType.Kill); // now actually settle both
         caster.Delete();
     }
 

@@ -2,6 +2,8 @@
 
 .NET 10 Ultima Online server emulator. Single-threaded game loop. All game logic runs on one thread.
 
+This is a personal fork (`Massi17/ModernUO`) of upstream `modernuo/ModernUO`. Never open or suggest a PR to upstream — keep this fork able to pull updates from upstream (`git fetch upstream && git merge upstream/<branch>`, remote already configured in each), while the user's own commits here stay local/personal. Sibling repos `../ClassicUO` (client) and `../UOFiddler` (client-data editor) share this same policy; see `../CLAUDE.md` for the cross-repo map.
+
 - **Server engine**: `Projects/Server/` — do NOT modify without explicit request
 - **Game content**: `Projects/UOContent/` — primary editing target
 - **Build**: `dotnet build` from repo root

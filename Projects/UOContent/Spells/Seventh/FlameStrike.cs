@@ -25,6 +25,8 @@ namespace Server.Spells.Seventh
 
         public override bool TargetFirst => true;
 
+        public override bool BlocksWeaponSwing => TargetFirstCommitted;
+
         public override bool ValidateTargetFirst(object target) =>
             target is Mobile m && Caster.CanBeHarmful(m, true);
 
@@ -65,7 +67,7 @@ namespace Server.Spells.Seventh
 
         public override void OnCast()
         {
-            Caster.Target = new SpellTarget<Mobile>(this, TargetFlags.Harmful);
+            Caster.Target = new SpellTarget<Mobile>(this, TargetFlags.Harmful, notifyOnLos: true);
         }
     }
 }

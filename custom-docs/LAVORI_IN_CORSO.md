@@ -37,7 +37,7 @@ Formato per ogni voce: cosa è stato fatto, cosa manca per chiuderlo, stato attu
 
 ## Target-first casting su Flame Strike
 
-- **Stato:** Implementato, buildato, testato, revisionato (con un giro di correzioni) — in attesa di verifica in gioco
+- **Stato:** Implementato, buildato, testato, revisionato, **verificato in gioco (11/11)** — due bug trovati e corretti durante la verifica (colpo in fase 1 che flizzava a torto; LOS al click silenziosa senza messaggio). In attesa solo della decisione finale (tenere/generalizzare, aggiustare, o revert)
 - **Fatto:**
   - `Spell.cs`: flag `TargetFirst`, `ValidateTargetFirst`, `HasReagents`, `ConsumeCastingResources`, `BeginTargetFirstDelay`, `Disturb()` addebita il costo se interrotto dopo il click
   - `SpellTarget.cs`: `OnTarget` rimanda la risoluzione per gli spell `TargetFirst`, doppio controllo range/LOS/validità
@@ -46,22 +46,44 @@ Formato per ogni voce: cosa è stato fatto, cosa manca per chiuderlo, stato attu
   - Un giro di correzioni dopo la revisione end-to-end: cursore "fantasma" che sopravviveva a un'interruzione prima di scegliere il bersaglio (ora annullato correttamente), e il timer di recupero (`NextSpellTime`) che partiva al click invece che alla fine del delay (ora coerente con tutti gli altri spell)
   - Loggato in `custom-docs/CUSTOM_CHANGES.md`
 - **Manca (da verificare in gioco, uno per uno):**
-  - Percorso felice: lancia → mirino appare subito → clicca un bersaglio valido → aspetta il delay → il danno arriva
-  - Click su bersaglio troppo lontano → messaggio "That is too far away.", **nessun costo**, mirino sparisce
-  - Click su bersaglio senza linea di vista → messaggio "Target can not be seen.", **nessun costo**
-  - Click su bersaglio morto/non attaccabile → messaggio di `CanBeHarmful`, **nessun costo**
-  - Bersaglio esce di range durante il nuovo delay (es. si allontana dopo il click) → messaggio "That is too far away." alla fine del timer, **mana e reagenti consumati**
-  - Bersaglio esce dalla linea di vista durante il delay → messaggio "Target can not be seen.", **mana e reagenti consumati**
-  - Bersaglio muore durante il delay → spell fallito, **mana e reagenti consumati**
-  - Vieni colpito durante il nuovo delay (dopo il click) → spell interrotto, **mana e reagenti consumati**, nessun danno
-  - Vieni colpito PRIMA di cliccare un bersaglio (mirino ancora a schermo) → **nessun costo**, il mirino deve sparire (era il bug corretto nel giro di revisione)
-  - Annulli il mirino PRIMA di cliccare un bersaglio → **nessun costo** (fase 1 resta gratis)
-  - Mana o reagenti insufficienti: il mirino non deve nemmeno apparire
+  - [x] Percorso felice: lancia → mirino appare subito → clicca un bersaglio valido → aspetta il delay → il danno arriva — **confermato 2026-09-15**
+  - [x] Click su bersaglio troppo lontano → messaggio "That is too far away.", **nessun costo**, mirino sparisce — **confermato 2026-09-15**
+  - [x] Click su bersaglio senza linea di vista → messaggio "Target can not be seen.", **nessun costo** — bug preesistente del motore trovato in test (condiviso da tutti gli spell offensivi di Magery, non specifico del pilot: `SpellTarget<T>.OnTargetOutOfLOS` non mandava nulla senza `retryOnLos`). **Corretto solo per Flame Strike** (su richiesta esplicita, per tenere lo scope limitato): nuovo flag opt-in `notifyOnLos` in `SpellTarget.cs`, attivato in `FlameStrike.cs`. **Confermato in gioco 2026-09-15**
+  - [x] Click su bersaglio morto/non attaccabile → messaggio di `CanBeHarmful`, **nessun costo** — **confermato 2026-09-15**
+  - [x] Bersaglio esce di range durante il nuovo delay (es. si allontana dopo il click) → messaggio "That is too far away." alla fine del timer, **mana e reagenti consumati** — **confermato 2026-09-15**
+  - [x] Bersaglio esce dalla linea di vista durante il delay → messaggio "Target can not be seen.", **mana e reagenti consumati** — **confermato da player normale 2026-09-15**
+  - [x] Bersaglio muore durante il delay → spell fallito, **mana e reagenti consumati** — **confermato 2026-09-15**
+  - [x] Vieni colpito durante il nuovo delay (dopo il click) → spell interrotto, **mana e reagenti consumati**, nessun danno — **confermato 2026-09-15** (comportamento attuale: QUALSIASI colpo fa flizzare in questa fase; deciso di tenerlo così per ora — vedi nota sotto sulla decisione futura su cosa/quanto deve far flizzare)
+  - [x] Vieni colpito PRIMA di cliccare un bersaglio (mirino ancora a schermo) → **decisione cambiata rispetto alla spec originale**: non deve succedere assolutamente nulla (niente costo, niente sparizione del mirino) perché la fase 1 non è ancora un vero cast (nessun mantra, nessuna mana/reagenti in gioco) — bug trovato in test 2026-09-15 (qualsiasi colpo flizzava anche qui), **corretto** in `Spell.cs` (`Disturb()` ora ignora `DisturbType.Hurt` durante la fase 1 non ancora committata), coperto da test di regressione, e **riverificato in gioco: confermato corretto 2026-09-15**
+  - [x] Annulli il mirino PRIMA di cliccare un bersaglio → **nessun costo** (fase 1 resta gratis) — **confermato 2026-09-15**
+  - [x] Mana o reagenti insufficienti: il mirino non deve nemmeno apparire — **confermato 2026-09-15**
   - Decisione finale: tenere la modifica, aggiustare qualcosa, o revert
+  - **Decisione futura (non bloccante, non ancora da implementare):** in fase 2 (dopo il click, durante il delay) oggi QUALSIASI colpo fa flizzare lo spell. Da rivedere in futuro: quali tipi di colpo devono poter interrompere e con quale probabilità/percentuale (invece che "sempre e comunque") — discusso 2026-09-15, nessuna decisione presa ancora
 - **Note tecniche minori emerse in revisione, non bloccanti, da valutare in futuro:**
   - Un commento XML su `BeginTargetFirstDelay` è rimasto leggermente disallineato dopo la correzione (dice ancora che avvia lui il recovery clock, ora lo fa `CastTimer`)
   - Nel ramo di risoluzione di `CastTimer` manca l'aggiornamento del flag di paralisi (`Caster.Delta(MobileDelta.Flags)`) che il ramo originale invece fa — preesistente, non introdotto da questa feature
   - Nessun test automatico copre lo scenario "click fantasma dopo interruzione" o il timing di `NextSpellTime` — solo verifica manuale per ora
+
+---
+
+## Blocco attacchi fisici durante la fase 2 di Flame Strike
+
+- **Stato:** Implementato, buildato, testato — in attesa di verifica in gioco
+- **Perché:** `BlocksMovement => false` su Flame Strike (per poterlo castare in movimento) accoppiava per errore anche "posso colpire con l'arma mentre casto" — `BaseWeapon.cs` usava lo stesso flag per entrambe le cose. Richiesto: poter muoversi ma non poter colpire fisicamente durante la fase 2 (dal click sul bersaglio fino a quando lo spell flizza o va a segno), e resettare il timer del colpo fisico nel momento esatto in cui si clicca il bersaglio.
+- **Fatto:**
+  - `Spell.cs`: nuovo `BlocksWeaponSwing` (virtual, default `=> BlocksMovement` — nessun cambiamento per nessuno spell che non lo sovrascrive)
+  - `BaseWeapon.cs`: `OnSwing` ora legge `BlocksWeaponSwing` invece di `BlocksMovement` direttamente
+  - `FlameStrike.cs`: `BlocksWeaponSwing => TargetFirstCommitted` — libero di colpire in fase 1 (sta solo mirando), bloccato in fase 2 fino a flizzo/risoluzione
+  - `Spell.cs`: `BeginTargetFirstDelay` (il momento esatto del click che avvia la fase 2) resetta `Caster.NextCombatTime` al delay dell'arma equipaggiata, come se avesse appena colpito
+  - Build e `dotnet test` puliti (30/30)
+  - Loggato in `custom-docs/CUSTOM_CHANGES.md`
+- **Manca (da verificare in gioco):**
+  - Fase 1 (mirino aperto, prima del click): puoi ancora colpire normalmente con l'arma
+  - Clicchi il bersaglio → da quel momento, tentare di colpire con l'arma non fa nulla (nessun danno, nessuna animazione di colpo)
+  - Il blocco dura fino a quando lo spell flizza (colpito, bersaglio invalido, ecc.) o va a segno — dopo, puoi tornare a colpire normalmente
+  - Il timer del prossimo colpo fisico si resetta esattamente al click sul bersaglio (non un colpo "gratis" appena finisce il blocco)
+  - Un normale spell (non-TargetFirst) continua a comportarsi come prima — bloccato dal colpire per tutta la durata di `Casting`, nessun cambiamento
+  - **Non coperto da test automatico:** il reset di `NextCombatTime` — serve un'arma equipaggiata reale, il cui `Layer` si risolve dai dati client (tiledata) non disponibili in modo affidabile nell'ambiente di test (stessa limitazione già nota per la LOS)
 
 ---
 

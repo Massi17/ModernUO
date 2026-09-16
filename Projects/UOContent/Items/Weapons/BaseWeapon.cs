@@ -841,7 +841,7 @@ public abstract partial class BaseWeapon
 
             if (canSwing)
             {
-                canSwing = attacker.Spell is not Spell sp || !sp.IsCasting || !sp.BlocksMovement;
+                canSwing = attacker.Spell is not Spell sp || !sp.IsCasting || !sp.BlocksWeaponSwing;
             }
 
             if (canSwing)
