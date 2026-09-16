@@ -88,3 +88,18 @@ Formato per ogni voce: cosa è stato fatto, cosa manca per chiuderlo, stato attu
   - Tentativo di cast con una bacchetta (wand) mentre già in cast → messaggio "You can not cast a spell while frozen." invariato, nessun cambiamento di comportamento
   - **Comportamento noto e accettato (non un problema):** se usi per interrompere uno spell che si risolve senza mai mostrare un mirino (es. Reactive Armor sotto AOS), lo spell interrotto (A) viene comunque flizzato e paga correttamente, ma lo spell interruttore stesso (B) fallisce silenziosamente su se stesso (l'effetto di B - es. l'attivazione dell'armatura reattiva - non si applica, pur avendo comunque il suo delay/animazione se presenti). Non è più possibile annullare il costo di uno spell in questo modo; resta solo il fatto che alcuni spell "istantanei" non funzionano bene come interruttori.
   - Decisione finale: tenere la modifica, aggiustare qualcosa, o revert
+
+---
+
+## Scudo magico (magic shield) — meccanica base
+
+- **Stato:** Implementato, buildato, testato (3 task via subagent-driven development, ognuno con revisione singola approvata, più revisione finale whole-branch con un solo finding bloccante — questo stesso aggiornamento alla documentazione) — non ancora agganciato a nulla di giocabile, mai verificato in game.
+- **Fatto:** `Mobile.MagicShieldAbsorb` (pool assorbimento danno, nuova property int get/set), `Server.Custom.MagicShield` (API statica Apply/Clear/Absorb, sostituzione invece di stack, bleed-through sull'eccedenza, scadenza opzionale a timer), tre hook in `SpellHelper.cs` che assorbono solo danno da incantesimo (mai mischia/ranged diretto), pacchetto di rete `0xBF`/`0x4D53` per notificare il client. Riferimenti: spec `custom-docs/specs/2026-09-16-magic-shield-design.md`, piano `custom-docs/plans/2026-09-16-magic-shield-modernuo-plan.md`.
+- **Manca (da fare prima o durante l'aggancio a uno spell/abilità reale):**
+  - Nessuno spell/abilità/oggetto concede ancora lo scudo — è solo il motore, per design (vedi spec).
+  - `MagicShield.Apply(points <= 0)` non fa clamp a 0 — un valore negativo resterebbe scritto sul Mobile indefinitamente (nessun chiamante lo fa oggi, ma va sistemato prima che qualcuno lo faccia).
+  - Nessun test copre il sito di aggancio 2 (`SpellDamageTimer.OnTick`, il percorso del danno da incantesimo ritardato — dove vivono spell reali come Magic Arrow/Fireball) con un delay non-zero; verificato solo per ispezione.
+  - `Server.Custom.MagicShield`'s `_expireTokens` dictionary non ha un hook di pulizia alla cancellazione del giocatore (il timer si autopulisce comunque quando scatta, quindi la perdita è limitata, non un leak illimitato).
+  - `DuelContext.cs` azzera `MagicDamageAbsorb`/`MeleeDamageAbsorb` all'inizio di un duello ma non `MagicShieldAbsorb` — da allineare quando lo scudo sarà davvero raggiungibile in game.
+  - Comportamento da confermare come voluto prima del rilascio: con assorbimento totale (danno che arriva a 0 dopo lo scudo), il bersaglio non viene interrotto nel cast, non viene smascherato dal nascondimento, non viene liberato dalla paralisi, e non genera damage entry per quel colpo (stesso comportamento già esistente di Attune Weapon sul melee, quindi coerente, ma è una proprietà PvP forte da confermare esplicitamente).
+  - Bug preesistente e non correlato trovato durante l'implementazione (non toccato, per la regola workflow #1 del CLAUDE.md): `Feint.GetDamageReduction` (`Projects/UOContent/Items/Weapons/Abilities/Feint.cs:52`) va in `ArgumentNullException` se chiamato con `from == null` — dormiente oggi, nessun chiamante di produzione lo raggiunge così.

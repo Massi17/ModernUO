@@ -107,9 +107,9 @@ Monster special abilities (`AlterMeleeDamageFrom`/their own direct damage calls,
 
 ## Network: notifying the client
 
-No changes to `Projects/Server/Network/`. `0xA1`/`0xA2`/`0xA3` (Hits/Mana/Stam) are fixed 2-value packets with no spare field, so the shield value travels as an `0xBF` (Extended Command) sub-command instead of a new top-level opcode — safer against upstream `git merge` collisions than claiming an opcode, since ModernUO is far more likely to add its own new sub-commands under `0xBF` occasionally than to reintroduce a byte we've claimed at the top level (and even that is a one-entry check at merge time, not a renumbering).
+The shield value travels as an `0xBF` (Extended Command) sub-command instead of a new top-level opcode — safer against upstream `git merge` collisions than claiming an opcode, since ModernUO is far more likely to add its own new sub-commands under `0xBF` occasionally than to reintroduce a byte we've claimed at the top level (and even that is a one-entry check at merge time, not a renumbering).
 
-New packet, defined entirely in `Projects/UOContent/` as a `Packet` subclass (no `Projects/Server/` changes needed beyond the `Mobile` field above — `Packet` and `NetState.SendPacket` are already public):
+New packet, defined in `Projects/Server/Network/Packets/OutgoingMagicShieldPackets.cs` as a `Packet` subclass, following the established convention for all other outgoing packets in the codebase (`OutgoingDamagePackets.cs` etc. — this convention keeps all packet definitions in one layer, making collisions easier to spot at merge time). The `Projects/Server/` touch was explicitly authorized for this feature; no changes needed beyond this new packet file and the `Mobile.MagicShieldAbsorb` field already documented above:
 
 - Sub-command ID: pick an unused value under `0xBF` (verify against ModernUO's current sub-command table at implementation time — not enumerated here to avoid the doc going stale).
 - Payload: `Serial` (4 bytes) + `MagicShieldAbsorb` (2 bytes, same compact width as the existing Hits attribute encoding).
