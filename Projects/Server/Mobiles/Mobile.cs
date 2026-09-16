@@ -478,6 +478,9 @@ public partial class Mobile : IHued, IComparable<Mobile>, ISpawnable, IObjectPro
     public int MeleeDamageAbsorb { get; set; }
 
     [CommandProperty(AccessLevel.GameMaster)]
+    public int MagicShieldAbsorb { get; set; }
+
+    [CommandProperty(AccessLevel.GameMaster)]
     public int MagicDamageAbsorb { get; set; }
 
     [CommandProperty(AccessLevel.GameMaster)]
