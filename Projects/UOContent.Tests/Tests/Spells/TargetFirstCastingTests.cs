@@ -131,4 +131,35 @@ public class TargetFirstCastingTests
     // automated test: it needs a real equipped BaseWeapon, whose Layer is resolved from
     // ItemData.Quality (client tile data) - not reliably available in this test host, the same
     // limitation already noted above for LOS. Covered by manual in-game verification instead.
+
+    // Confirms the target-first pattern generalizes to an ordinary damage spell, not just
+    // Flame Strike (which uses the pattern's own opt-in deferred-cost variant).
+    [Fact]
+    public void MagicArrow_BlocksWeaponSwing_OnlyOncePhase2Commits()
+    {
+        var caster = new Mobile(World.NewMobile);
+        caster.DefaultMobileInit();
+        var target = new Mobile(World.NewMobile);
+        target.DefaultMobileInit();
+
+        caster.MoveToWorld(new Point3D(1000, 1000, 0), Map.Felucca);
+        target.MoveToWorld(new Point3D(1001, 1000, 0), Map.Felucca);
+
+        var spell = new MagicArrowSpell(caster) { State = SpellState.Casting };
+        caster.Spell = spell;
+
+        Assert.False(spell.BlocksMovement);
+        Assert.False(spell.BlocksWeaponSwing); // phase 1: not committed yet
+
+        var spellTarget = new SpellTarget<Mobile>(spell, TargetFlags.Harmful) { CheckLOS = false };
+        caster.Target = spellTarget;
+        spellTarget.Invoke(caster, target); // click commits phase 2
+
+        Assert.True(spell.TargetFirstCommitted);
+        Assert.True(spell.BlocksWeaponSwing); // phase 2: locked out until fizzle or hit
+
+        spell.Disturb(DisturbType.Kill);
+        caster.Delete();
+        target.Delete();
+    }
 }

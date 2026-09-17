@@ -20,6 +20,14 @@ namespace Server.Spells.Third
 
         public override bool DelayedDamage => true;
 
+        public override bool BlocksMovement => false;
+
+        public override bool TargetFirst => true;
+
+        public override bool BlocksWeaponSwing => TargetFirstCommitted;
+
+        public override bool ValidateTargetFirst(object target) => target is Mobile m && Caster.CanBeHarmful(m, true);
+
         public void Target(Mobile m)
         {
             if (CheckHSequence(m))
@@ -62,7 +70,7 @@ namespace Server.Spells.Third
 
         public override void OnCast()
         {
-            Caster.Target = new SpellTarget<Mobile>(this, TargetFlags.Harmful);
+            Caster.Target = new SpellTarget<Mobile>(this, TargetFlags.Harmful, notifyOnLos: true);
         }
     }
 }
