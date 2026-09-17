@@ -484,6 +484,12 @@ public partial class Mobile : IHued, IComparable<Mobile>, ISpawnable, IObjectPro
     public int MagicDamageAbsorb { get; set; }
 
     [CommandProperty(AccessLevel.GameMaster)]
+    public bool SpellReflectActive { get; set; }
+
+    [CommandProperty(AccessLevel.GameMaster)]
+    public bool PiercesSpellReflect { get; set; }
+
+    [CommandProperty(AccessLevel.GameMaster)]
     public int SkillsTotal => Skills?.Total ?? 0;
 
     [CommandProperty(AccessLevel.GameMaster)]
