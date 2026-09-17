@@ -885,11 +885,32 @@ namespace Server.Spells
         }
 
         // magic reflection
-        public static bool CheckReflect(int circle, Mobile caster, ref Mobile target) =>
+        public static ReflectResult CheckReflect(int circle, Mobile caster, ref Mobile target) =>
             CheckReflect(circle, ref caster, ref target);
 
-        public static bool CheckReflect(int circle, ref Mobile caster, ref Mobile target)
+        public static ReflectResult CheckReflect(int circle, ref Mobile caster, ref Mobile target)
         {
+            if (caster.PiercesSpellReflect && target.SpellReflectActive)
+            {
+                SpellReflect.Clear(target);
+                return ReflectResult.None;
+            }
+
+            if (target.SpellReflectActive)
+            {
+                SpellReflect.Clear(target);
+
+                if (caster.SpellReflectActive)
+                {
+                    SpellReflect.Clear(caster);
+                    return ReflectResult.Vanished;
+                }
+
+                target.FixedEffect(0x37B9, 10, 5);
+                (caster, target) = (target, caster);
+                return ReflectResult.Reflected;
+            }
+
             var reflect = false;
 
             if (target.MagicDamageAbsorb > 0)
@@ -927,7 +948,7 @@ namespace Server.Spells
                 (caster, target) = (target, caster);
             }
 
-            return reflect;
+            return reflect ? ReflectResult.Reflected : ReflectResult.None;
         }
 
         public static void Damage(Spell spell, Mobile target, double damage)

@@ -1,4 +1,5 @@
 ﻿using System;
+using Server.Spells;
 using Server.Targeting;
 
 namespace Server.Spells.Mysticism;
@@ -36,7 +37,7 @@ public class EagleStrikeSpell : MysticSpell, ITargetingSpell<Mobile>
 
             var source = Caster;
 
-            if (SpellHelper.CheckReflect(2, ref source, ref m))
+            if (SpellHelper.CheckReflect(2, ref source, ref m) == ReflectResult.Reflected)
             {
                 Timer.StartTimer(TimeSpan.FromSeconds(0.5), () =>
                 {
