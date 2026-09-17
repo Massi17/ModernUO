@@ -38,7 +38,10 @@ namespace Server.Spells.Fifth
 
                     SpellHelper.Turn(from, target);
 
-                    SpellHelper.CheckReflect((int)Circle, ref from, ref target);
+                    if (SpellHelper.CheckReflect((int)Circle, ref from, ref target) == ReflectResult.Vanished)
+                    {
+                        return;
+                    }
 
                     var damage = Math.Min((int)((Caster.Skills.Magery.Value + Caster.Int) / 5), 60);
 
@@ -55,7 +58,10 @@ namespace Server.Spells.Fifth
 
                 SpellHelper.Turn(from, target);
 
-                SpellHelper.CheckReflect((int)Circle, ref from, ref target);
+                if (SpellHelper.CheckReflect((int)Circle, ref from, ref target) == ReflectResult.Vanished)
+                {
+                    return;
+                }
 
                 // Algorithm: (highestStat - lowestStat) / 2 [- 50% if resisted]
 
