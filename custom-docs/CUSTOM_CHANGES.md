@@ -35,3 +35,25 @@ Ogni riga qui sotto aiuta, ad ogni sync con l'upstream, a capire quali modifiche
 | Projects/Server/Mobiles/Mobile.cs | Aggiunta proprietà `MagicShieldAbsorb` (int, get/set) per il pool di assorbimento danno della feature magic-shield; completamente additiva, nessun cambiamento di comportamento ai path di codice preesistenti | 2026-09-16 |
 | Projects/UOContent/Spells/Base/SpellHelper.cs | Tre agganci one-line (in `Damage(Spell, TimeSpan, Mobile, Mobile, double)`, `SpellDamageTimer.OnTick()`, e `Damage(Spell, TimeSpan, Mobile, Mobile, double, int×6, DFAlgorithm)`) che chiamano `MagicShield.Absorb(...)` prima che il danno da incantesimo raggiunga `Mobile.Damage()`/`AOS.Damage()`; no-op per ogni Mobile con `MagicShieldAbsorb == 0` (oggi, tutti), visto che nulla concede ancora lo scudo | 2026-09-16 |
 | Projects/Server/Network/Packets/OutgoingMagicShieldPackets.cs | Nuovo file, nuovo pacchetto outgoing (`0xBF` sub-command `0x4D53`) che notifica al client i punti di magic-shield correnti di un Mobile; il sub-command ID `0x4D53` è registrato qui perché è l'estensione propria della fork sotto `0xBF` e va mantenuto visibile per future aggiunte per evitare collisioni | 2026-09-16 |
+| `Projects/Server/Mobiles/Mobile.cs` | Add `SpellReflectActive`/`PiercesSpellReflect` bool properties for the Magic Reflection redesign (targetable reflect shield) | 2026-09-17 |
+| `Projects/UOContent/Spells/Base/SpellHelper.cs` | `CheckReflect` return type changes from `bool` to `ReflectResult` (None/Reflected/Vanished); adds the new shield + piercing checks ahead of the untouched legacy `MagicDamageAbsorb`/`BaseCreature` reflect path | 2026-09-17 |
+| `Projects/UOContent/Spells/Fifth/MagicReflect.cs` | Full rewrite: targetable single-use reflect shield (target-first casting) replaces the old self-only passive resistance buff, no era gating | 2026-09-17 |
+| `Projects/UOContent/Spells/First/Weaken.cs` | Skip spell effect on a double-shield Vanished reflect | 2026-09-17 |
+| `Projects/UOContent/Spells/First/Clumsy.cs` | Skip spell effect on a double-shield Vanished reflect | 2026-09-17 |
+| `Projects/UOContent/Spells/First/Feeblemind.cs` | Skip spell effect on a double-shield Vanished reflect | 2026-09-17 |
+| `Projects/UOContent/Spells/First/MagicArrow.cs` | Skip spell effect on a double-shield Vanished reflect | 2026-09-17 |
+| `Projects/UOContent/Spells/Second/Harm.cs` | Skip spell effect on a double-shield Vanished reflect | 2026-09-17 |
+| `Projects/UOContent/Spells/Third/Poison.cs` | Skip spell effect on a double-shield Vanished reflect | 2026-09-17 |
+| `Projects/UOContent/Spells/Third/Fireball.cs` | Skip spell effect on a double-shield Vanished reflect | 2026-09-17 |
+| `Projects/UOContent/Spells/Fourth/Curse.cs` | Skip spell effect on a double-shield Vanished reflect | 2026-09-17 |
+| `Projects/UOContent/Spells/Fourth/ManaDrain.cs` | Skip spell effect on a double-shield Vanished reflect | 2026-09-17 |
+| `Projects/UOContent/Spells/Fourth/Lightning.cs` | Skip spell effect on a double-shield Vanished reflect | 2026-09-17 |
+| `Projects/UOContent/Spells/Fifth/Paralyze.cs` | Skip spell effect on a double-shield Vanished reflect | 2026-09-17 |
+| `Projects/UOContent/Spells/Fifth/MindBlast.cs` | Skip spell effect on a double-shield Vanished reflect (both era branches) | 2026-09-17 |
+| `Projects/UOContent/Spells/Sixth/Explosion.cs` | Skip spell effect on a double-shield Vanished reflect | 2026-09-17 |
+| `Projects/UOContent/Spells/Sixth/EnergyBolt.cs` | Skip spell effect on a double-shield Vanished reflect | 2026-09-17 |
+| `Projects/UOContent/Spells/Seventh/FlameStrike.cs` | Skip spell effect on a double-shield Vanished reflect | 2026-09-17 |
+| `Projects/UOContent/Spells/Seventh/ManaVampire.cs` | Skip spell effect on a double-shield Vanished reflect | 2026-09-17 |
+| `Projects/UOContent/Spells/Mysticism/SpellPlagueSpell.cs` | Skip spell effect on a double-shield Vanished reflect | 2026-09-17 |
+| `Projects/UOContent/Spells/Mysticism/BombardSpell.cs` | Restructure existing reflect-effect `if` to also skip the whole spell effect on Vanished | 2026-09-17 |
+| `Projects/UOContent/Spells/Mysticism/EagleStrikeSpell.cs` | Restructure existing reflect-effect `if` to also skip the whole spell effect on Vanished | 2026-09-17 |

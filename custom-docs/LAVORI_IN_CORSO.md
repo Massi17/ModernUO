@@ -125,3 +125,29 @@ Formato per ogni voce: cosa è stato fatto, cosa manca per chiuderlo, stato attu
   - `DuelContext.cs` azzera `MagicDamageAbsorb`/`MeleeDamageAbsorb` all'inizio di un duello ma non `MagicShieldAbsorb` — da allineare quando lo scudo sarà davvero raggiungibile in game.
   - Comportamento da confermare come voluto prima del rilascio: con assorbimento totale (danno che arriva a 0 dopo lo scudo), il bersaglio non viene interrotto nel cast, non viene smascherato dal nascondimento, non viene liberato dalla paralisi, e non genera damage entry per quel colpo (stesso comportamento già esistente di Attune Weapon sul melee, quindi coerente, ma è una proprietà PvP forte da confermare esplicitamente).
   - Bug preesistente e non correlato trovato durante l'implementazione (non toccato, per la regola workflow #1 del CLAUDE.md): `Feint.GetDamageReduction` (`Projects/UOContent/Items/Weapons/Abilities/Feint.cs:52`) va in `ArgumentNullException` se chiamato con `from == null` — dormiente oggi, nessun chiamante di produzione lo raggiunge così.
+
+---
+
+## Magic Reflection — scudo riflettente targetabile
+
+- **Stato:** Implementato, buildato, testato (unit test su `SpellReflect`, `SpellHelper.CheckReflect`, wiring target-first di `MagicReflectSpell` — copertura diretta della logica, non attraverso un cast completo in-game, per la stessa ragione già nota per Flame Strike: il fizzle roll di `CheckSequence()` non è controllabile in modo affidabile in questo ambiente di test) — **non ancora verificato in gioco**.
+- **Cosa copre:** redesign completo di `MagicReflectSpell` (`Spells/Fifth/MagicReflect.cs`) da buff passivo di resistenza a scudo riflettente targetabile a singolo utilizzo, riflette tutte le 19 spell (Magery/Necromancy commentate escluse/Mysticism) che chiamano `SpellHelper.CheckReflect`, caso "doppio scudo" (nessuno prende danno), scadenza a 5 minuti, hook di perforazione (`Mobile.PiercesSpellReflect`) per una futura abilità PvP non ancora costruita.
+- **Fatto:**
+  - `Projects/Server/Mobiles/Mobile.cs`: `SpellReflectActive`, `PiercesSpellReflect`
+  - `Projects/UOContent/Custom/SpellReflect.cs`: Apply/Clear/IsActive, scadenza a timer, buff icon
+  - `Projects/UOContent/Spells/Base/ReflectResult.cs`: nuovo enum None/Reflected/Vanished
+  - `Projects/UOContent/Spells/Base/SpellHelper.cs`: `CheckReflect` riscritto, path legacy (`MagicDamageAbsorb`/`MeerCaptain`) intatto
+  - `Projects/UOContent/Spells/Fifth/MagicReflect.cs`: riscrittura completa, target-first, nessun gating per era
+  - 19 file spell (elencati in `CUSTOM_CHANGES.md`): guardia "Vanished" dopo la chiamata a `CheckReflect` esistente
+  - Build e `dotnet test` puliti
+- **Manca (da verificare in gioco, uno per uno):**
+  - [ ] Cast su se stessi → scudo applicato, buff icon visibile
+  - [ ] Cast su un altro giocatore → scudo applicato a lui, non a te
+  - [ ] Bersaglio scudato colpito da una spell offensiva → nessun danno a lui, il danno arriva invece a chi ha lanciato la spell, ricalcolato sulle sue resistenze
+  - [ ] Doppio scudo (entrambi attivi) → nessuno dei due prende danno, entrambi gli scudi si rompono
+  - [ ] Scudo mai consumato → sparisce da solo dopo 5 minuti
+  - [ ] Mirino target-first: ti muovi liberamente in fase 1, non puoi menare fendenti in fase 2 fino a risoluzione/flizzo
+  - [ ] Cast su una creatura/mostro → rifiutato con messaggio, nessuno scudo applicato
+  - [ ] Verificare a schermo che il testo del buff icon (cliloc 1075817/1075818, riusato dal vecchio Magic Reflection) abbia senso per il nuovo scudo — se descrive ancora i vecchi numeri di resistenza, va sostituito con un cliloc più generico
+  - Decisione finale: tenere, aggiustare, o revert
+- **Fuori scope, noto e accettato:** Fire Field/Paralyze Field non riflettono (non passano da `CheckReflect`); le creature non possono ricevere lo scudo; `DuelContext.cs` non resetta il nuovo scudo all'inizio di un duello (stesso gap già accettato per `MagicShieldAbsorb`); l'abilità PvP che userà `PiercesSpellReflect` non è ancora stata costruita.
