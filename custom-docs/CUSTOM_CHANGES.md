@@ -57,3 +57,4 @@ Ogni riga qui sotto aiuta, ad ogni sync con l'upstream, a capire quali modifiche
 | `Projects/UOContent/Spells/Mysticism/SpellPlagueSpell.cs` | Skip spell effect on a double-shield Vanished reflect | 2026-09-17 |
 | `Projects/UOContent/Spells/Mysticism/BombardSpell.cs` | Restructure existing reflect-effect `if` to also skip the whole spell effect on Vanished | 2026-09-17 |
 | `Projects/UOContent/Spells/Mysticism/EagleStrikeSpell.cs` | Restructure existing reflect-effect `if` to also skip the whole spell effect on Vanished | 2026-09-17 |
+| `Projects/UOContent/Items/Talismans/BaseTalisman.cs` | Ward talisman removal (`TalismanRemoval.Ward`) now calls `SpellReflect.Clear(target)` instead of the deleted `MagicReflectSpell.EndReflect(target)` — direct semantic equivalent under the redesigned reflect shield (controller ruling during Task 4, fixing a plan defect: a deleted public static method was still referenced here) | 2026-09-17 |
