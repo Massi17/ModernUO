@@ -90,7 +90,9 @@ public class SpellTarget<T> : Target, ISpellTarget<T> where T : class, IPoint3D
             // OnTargetFinish()'s purposes.
             spell.EndTargetFirstCommitment();
 
-            if (o is IPoint2D p && Range >= 0 && !from.InRange(p, Range))
+            var loc = o is Item item ? (IPoint2D)item.GetWorldLocation() : o as IPoint2D;
+
+            if (loc != null && Range >= 0 && !from.InRange(loc, Range))
             {
                 spell.ConsumeCastingResources();
                 from.SendLocalizedMessage(500446); // That is too far away.

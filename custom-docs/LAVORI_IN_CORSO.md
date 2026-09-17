@@ -174,11 +174,13 @@ Formato per ogni voce: cosa è stato fatto, cosa manca per chiuderlo, stato attu
   - [ ] Lightning
   - [ ] Energy Bolt
   - [ ] Poison (in particolare: il livello di veleno dipende dalla distanza misurata a fine delay, non al click — verificare che allontanarsi durante il delay riduca/annulli l'effetto)
-  - [ ] Heal (in particolare: il mirino ora accetta anche bersagli diversi da se stessi durante il movimento)
-  - [ ] Magic Lock (in particolare: mirare un oggetto non-baule non deve costare nulla in fase 1)
+  - [ ] Heal (in particolare: il mirino ora accetta anche bersagli diversi da se stessi durante il movimento) — **nota:** i rifiuti a livello di `Target()` (pet morto, animated dead, golem, avvelenato) restano gratuiti come prima di questa feature, perché escono prima che `CheckSequence()` venga mai chiamato — non è il caso generale "fallimento in fase 2 = addebitato", è un'eccezione preesistente specifica di Heal, da non confondere durante la verifica manuale
+  - [ ] Magic Lock (in particolare: mirare un oggetto non-baule non deve costare nulla in fase 1) — **nota:** stessa eccezione di Heal: i rifiuti a livello di `Target()` (baule locked-down/già bloccato/ParagonChest) restano gratuiti, perché escono prima di `CheckSequence()` — solo i rifiuti target-first (range/LOS/tipo non valido in fase 1/2) seguono la regola generale di addebito
   - [ ] Unlock (in particolare: NON ha `allowGround` — verificare che il terreno vuoto resti un bersaglio non valido, invariato)
   - [ ] Fire Field
   - [ ] Paralyze Field
   - [ ] Reveal
+  - [ ] NPC mage/guard (MageAI/GuardAI) con gli spell convertiti (Magic Arrow, Fireball, Lightning, Energy Bolt, Poison, Heal) → l'NPC casta, insegue e colpisce normalmente, e non resta bloccato con il mirino aperto se il bersaglio muore o esce di linea di vista durante la mira
+  - [ ] Bacchetta (wand) di Magic Arrow/Fireball/Lightning/Healing → consuma esattamente una carica per cast e applica l'effetto correttamente (percorso da guardare con attenzione: il delay della bacchetta è a zero/sincrono senza intervallo, quindi la logica di risoluzione gira due volte in rapida successione — idempotente per progettazione, ma mai esercitata finora in produzione per questi spell)
   - Decisione finale: tenere così, aggiustare, o rivedere qualcosa
 - **Fuori scope, noto e accettato:** Gate Travel resta col pre-cast classico (richiede un secondo `Target` da estendere, non è il pattern già pronto); Magic Reflection è stata gestita a parte (già completata e mergiata).

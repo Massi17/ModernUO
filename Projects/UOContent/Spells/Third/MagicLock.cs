@@ -27,7 +27,16 @@ namespace Server.Spells.Third
 
         public override bool BlocksWeaponSwing => TargetFirstCommitted;
 
-        public override bool ValidateTargetFirst(object target) => target is LockableContainer;
+        public override bool ValidateTargetFirst(object target)
+        {
+            if (target is LockableContainer)
+            {
+                return true;
+            }
+
+            Caster.SendLocalizedMessage(501762); // Target must be an unlocked chest.
+            return false;
+        }
 
         public void Target(Item item)
         {
