@@ -36,8 +36,14 @@ public class EagleStrikeSpell : MysticSpell, ITargetingSpell<Mobile>
             }
 
             var source = Caster;
+            var reflectResult = SpellHelper.CheckReflect(2, ref source, ref m);
 
-            if (SpellHelper.CheckReflect(2, ref source, ref m) == ReflectResult.Reflected)
+            if (reflectResult == ReflectResult.Vanished)
+            {
+                return;
+            }
+
+            if (reflectResult == ReflectResult.Reflected)
             {
                 Timer.StartTimer(TimeSpan.FromSeconds(0.5), () =>
                 {
