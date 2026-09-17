@@ -23,6 +23,14 @@ namespace Server.Spells.First
 
         public override SpellCircle Circle => SpellCircle.First;
 
+        public override bool BlocksMovement => false;
+
+        public override bool TargetFirst => true;
+
+        public override bool BlocksWeaponSwing => TargetFirstCommitted;
+
+        public override bool ValidateTargetFirst(object target) => target is Mobile m && Caster.CanBeBeneficial(m, true);
+
         public void Target(Mobile m)
         {
             if (m.IsDeadBondedPet)
@@ -84,7 +92,7 @@ namespace Server.Spells.First
 
         public override void OnCast()
         {
-            Caster.Target = new SpellTarget<Mobile>(this, TargetFlags.Beneficial);
+            Caster.Target = new SpellTarget<Mobile>(this, TargetFlags.Beneficial, notifyOnLos: true);
         }
     }
 }

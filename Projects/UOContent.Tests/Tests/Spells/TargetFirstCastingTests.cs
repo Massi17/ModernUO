@@ -162,4 +162,36 @@ public class TargetFirstCastingTests
         caster.Delete();
         target.Delete();
     }
+
+    // Confirms target-first works for a beneficial-Mobile spell, not just harmful ones -
+    // ValidateTargetFirst uses CanBeBeneficial here instead of CanBeHarmful.
+    [Fact]
+    public void Heal_TargetFirst_AcceptsABeneficialTarget()
+    {
+        var caster = new Mobile(World.NewMobile);
+        caster.DefaultMobileInit();
+        var target = new Mobile(World.NewMobile);
+        target.DefaultMobileInit();
+
+        caster.MoveToWorld(new Point3D(1000, 1000, 0), Map.Felucca);
+        target.MoveToWorld(new Point3D(1001, 1000, 0), Map.Felucca);
+
+        var spell = new HealSpell(caster) { State = SpellState.Casting };
+        caster.Spell = spell;
+
+        Assert.True(spell.TargetFirst);
+        Assert.False(spell.BlocksMovement);
+        Assert.False(spell.BlocksWeaponSwing);
+
+        var spellTarget = new SpellTarget<Mobile>(spell, TargetFlags.Beneficial) { CheckLOS = false };
+        caster.Target = spellTarget;
+        spellTarget.Invoke(caster, target);
+
+        Assert.True(spell.TargetFirstCommitted);
+        Assert.True(spell.BlocksWeaponSwing);
+
+        spell.Disturb(DisturbType.Kill);
+        caster.Delete();
+        target.Delete();
+    }
 }
