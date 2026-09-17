@@ -28,16 +28,19 @@ namespace Server.Spells.Fifth
 
         public override bool BlocksWeaponSwing => TargetFirstCommitted;
 
-        public override bool ValidateTargetFirst(object target) => target is Mobile { Player: true };
+        public override bool ValidateTargetFirst(object target)
+        {
+            if (target is Mobile { Player: true })
+            {
+                return true;
+            }
+
+            Caster.SendMessage("You can only cast this on a player.");
+            return false;
+        }
 
         public void Target(Mobile m)
         {
-            if (!m.Player)
-            {
-                Caster.SendMessage("You can only cast this on a player.");
-                return;
-            }
-
             if (CheckSequence())
             {
                 SpellReflect.Apply(m, TimeSpan.FromMinutes(5));

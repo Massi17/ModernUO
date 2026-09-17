@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ModernUO.CodeGeneratedEvents;
 using Server.Engines.BuffIcons;
 using Server.Mobiles;
 
@@ -14,7 +15,7 @@ public static class SpellReflect
         Clear(m);
 
         m.SpellReflectActive = true;
-        (m as PlayerMobile)?.AddBuff(new BuffInfo(BuffIcon.MagicReflection, 1075817, retainThroughDeath: true));
+        (m as PlayerMobile)?.AddBuff(new BuffInfo(BuffIcon.MagicReflection, 1075817, 1075817, duration, retainThroughDeath: true));
 
         Timer.StartTimer(duration, () => Clear(m), out var token);
         _expireTokens[m] = token;
@@ -35,4 +36,7 @@ public static class SpellReflect
     }
 
     public static bool IsActive(Mobile m) => m.SpellReflectActive;
+
+    [OnEvent(nameof(PlayerMobile.PlayerDeletedEvent))]
+    public static void OnPlayerDeleted(Mobile m) => Clear(m);
 }

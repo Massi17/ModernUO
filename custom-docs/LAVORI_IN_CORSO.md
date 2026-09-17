@@ -139,6 +139,7 @@ Formato per ogni voce: cosa è stato fatto, cosa manca per chiuderlo, stato attu
   - `Projects/UOContent/Spells/Base/SpellHelper.cs`: `CheckReflect` riscritto, path legacy (`MagicDamageAbsorb`/`MeerCaptain`) intatto
   - `Projects/UOContent/Spells/Fifth/MagicReflect.cs`: riscrittura completa, target-first, nessun gating per era
   - 19 file spell (elencati in `CUSTOM_CHANGES.md`): guardia "Vanished" dopo la chiamata a `CheckReflect` esistente
+  - `Projects/UOContent/Items/Talismans/BaseTalisman.cs`: `TalismanRemoval.Ward` ora pulisce anche lo scudo riflettente
   - Build e `dotnet test` puliti
 - **Manca (da verificare in gioco, uno per uno):**
   - [ ] Cast su se stessi → scudo applicato, buff icon visibile
@@ -149,5 +150,9 @@ Formato per ogni voce: cosa è stato fatto, cosa manca per chiuderlo, stato attu
   - [ ] Mirino target-first: ti muovi liberamente in fase 1, non puoi menare fendenti in fase 2 fino a risoluzione/flizzo
   - [ ] Cast su una creatura/mostro → rifiutato con messaggio, nessuno scudo applicato
   - [ ] Verificare a schermo che il testo del buff icon (cliloc 1075817/1075818, riusato dal vecchio Magic Reflection) abbia senso per il nuovo scudo — se descrive ancora i vecchi numeri di resistenza, va sostituito con un cliloc più generico
+  - [ ] Cliccare un Mobile non giocatore (mostro/NPC) → verificare che ora compaia il messaggio di rifiuto ("You can only cast this on a player.") invece di chiudere il mirino in silenzio
+  - [ ] Rimozione ward da talismano (`BaseTalisman.cs`, caso `TalismanRemoval.Ward`) su un giocatore con scudo riflettente attivo → verificare che lo scudo venga effettivamente rimosso
+  - [ ] Scudo attivo alla morte (`retainThroughDeath: true`) → confermare che sia il comportamento voluto e non solo ereditato per caso dal vecchio buff
+  - [ ] Ricasting su un giocatore già scudato → verificare che lo scudo venga silenziosamente rinnovato (sostituito) invece di mostrare il vecchio messaggio "This spell is already in effect"
   - Decisione finale: tenere, aggiustare, o revert
 - **Fuori scope, noto e accettato:** Fire Field/Paralyze Field non riflettono (non passano da `CheckReflect`); le creature non possono ricevere lo scudo; `DuelContext.cs` non resetta il nuovo scudo all'inizio di un duello (stesso gap già accettato per `MagicShieldAbsorb`); l'abilità PvP che userà `PiercesSpellReflect` non è ancora stata costruita.
