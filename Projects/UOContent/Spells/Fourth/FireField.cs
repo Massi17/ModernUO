@@ -28,6 +28,14 @@ public class FireFieldSpell : MagerySpell, ITargetingSpell<IPoint3D>
 
     public int TargetRange => Core.T2A ? 15 : 18;
 
+    public override bool BlocksMovement => false;
+
+    public override bool TargetFirst => true;
+
+    public override bool BlocksWeaponSwing => TargetFirstCommitted;
+
+    public override bool ValidateTargetFirst(object target) => true;
+
     public void Target(IPoint3D p)
     {
         if (SpellHelper.CheckTown(p, Caster) && CheckSequence())
@@ -62,7 +70,7 @@ public class FireFieldSpell : MagerySpell, ITargetingSpell<IPoint3D>
 
     public override void OnCast()
     {
-        Caster.Target = new SpellTarget<IPoint3D>(this, allowGround: true);
+        Caster.Target = new SpellTarget<IPoint3D>(this, allowGround: true, notifyOnLos: true);
     }
 }
 

@@ -20,6 +20,14 @@ namespace Server.Spells.Third
 
         public override SpellCircle Circle => SpellCircle.Third;
 
+        public override bool BlocksMovement => false;
+
+        public override bool TargetFirst => true;
+
+        public override bool BlocksWeaponSwing => TargetFirstCommitted;
+
+        public override bool ValidateTargetFirst(object target) => true;
+
         public void Target(IPoint3D p)
         {
             if (CheckSequence())
@@ -84,7 +92,7 @@ namespace Server.Spells.Third
 
         public override void OnCast()
         {
-            Caster.Target = new SpellTarget<IPoint3D>(this);
+            Caster.Target = new SpellTarget<IPoint3D>(this, notifyOnLos: true);
         }
     }
 }

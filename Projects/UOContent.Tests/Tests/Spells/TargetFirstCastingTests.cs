@@ -1,6 +1,7 @@
 using Server.Items;
 using Server.Spells;
 using Server.Spells.First;
+using Server.Spells.Fourth;
 using Server.Spells.Seventh;
 using Server.Spells.Third;
 using Server.Targeting;
@@ -227,5 +228,35 @@ public class TargetFirstCastingTests
         spell.Disturb(DisturbType.Kill);
         caster.Delete();
         chest.Delete();
+    }
+
+    // Proves the generic target-first engine works for T = IPoint3D (a bare ground click),
+    // not just T = Mobile or T = Item.
+    [Fact]
+    public void FireField_TargetFirst_AcceptsAGroundTarget()
+    {
+        var caster = new Mobile(World.NewMobile);
+        caster.DefaultMobileInit();
+        caster.MoveToWorld(new Point3D(1000, 1000, 0), Map.Felucca);
+
+        var spell = new FireFieldSpell(caster) { State = SpellState.Casting };
+        caster.Spell = spell;
+
+        Assert.True(spell.TargetFirst);
+        Assert.False(spell.BlocksMovement);
+        Assert.False(spell.BlocksWeaponSwing);
+
+        var spellTarget = new SpellTarget<IPoint3D>(spell, allowGround: true) { CheckLOS = false };
+        caster.Target = spellTarget;
+        // A ground click reaches Target.Invoke() as a LandTarget, never a bare Point3D - that's
+        // the only object type the engine's own switch in Target.Invoke() routes to the
+        // AllowGround branch of CanTarget().
+        spellTarget.Invoke(caster, new LandTarget(new Point3D(1001, 1000, 0), Map.Felucca));
+
+        Assert.True(spell.TargetFirstCommitted);
+        Assert.True(spell.BlocksWeaponSwing);
+
+        spell.Disturb(DisturbType.Kill);
+        caster.Delete();
     }
 }
