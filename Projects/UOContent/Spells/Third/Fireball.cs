@@ -28,7 +28,10 @@ namespace Server.Spells.Third
 
                 SpellHelper.Turn(source, m);
 
-                SpellHelper.CheckReflect((int)Circle, ref source, ref m);
+                if (SpellHelper.CheckReflect((int)Circle, ref source, ref m) == ReflectResult.Vanished)
+                {
+                    return;
+                }
 
                 double damage;
 

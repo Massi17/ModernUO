@@ -37,7 +37,10 @@ namespace Server.Spells.First
                     return;
                 }
 
-                SpellHelper.CheckReflect((int)Circle, ref source, ref m);
+                if (SpellHelper.CheckReflect((int)Circle, ref source, ref m) == ReflectResult.Vanished)
+                {
+                    return;
+                }
 
                 double damage;
 
