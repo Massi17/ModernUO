@@ -132,6 +132,7 @@ public partial class Spellbook : Item, ICraftable, ISlayer, IAosItem
     public virtual SpellbookType SpellbookType => SpellbookType.Regular;
     public virtual int BookOffset => 0;
     public virtual int BookCount => 64;
+    public virtual bool RequiresEquipToCast => false;
 
     [SerializableField(7, fieldChanged: nameof(OnContentChanged))]
     [SerializedCommandProperty(AccessLevel.GameMaster)]
@@ -447,7 +448,8 @@ public partial class Spellbook : Item, ICraftable, ISlayer, IAosItem
 
             var book = list[i];
 
-            if (!book.Deleted && (book.Parent == from || pack != null && book.Parent == pack) &&
+            if (!book.Deleted &&
+                (book.Parent == from || !book.RequiresEquipToCast && pack != null && book.Parent == pack) &&
                 ValidateSpellbook(book, spellID, type))
             {
                 return book;
