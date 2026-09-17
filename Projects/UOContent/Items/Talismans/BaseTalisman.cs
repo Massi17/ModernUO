@@ -1,8 +1,8 @@
 using System;
 using ModernUO.Serialization;
+using Server.Custom;
 using Server.Engines.BuffIcons;
 using Server.Mobiles;
-using Server.Spells.Fifth;
 using Server.Spells.First;
 using Server.Spells.Fourth;
 using Server.Spells.Necromancy;
@@ -959,7 +959,7 @@ public partial class BaseTalisman : Item, IAosItem
                             0
                         );
 
-                        MagicReflectSpell.EndReflect(target);
+                        SpellReflect.Clear(target);
                         ReactiveArmorSpell.EndArmor(target);
                         ProtectionSpell.EndProtection(target);
 
