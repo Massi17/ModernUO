@@ -15,10 +15,10 @@ public class CastInterruptRecastTests
         caster.DefaultMobileInit();
 
         var flameStrike = new FlameStrikeSpell(caster);
-        var magicArrow = new MagicArrowSpell(caster);
+        var clumsy = new ClumsySpell(caster);
 
         Assert.True(flameStrike.UsesDeferredCast);
-        Assert.False(magicArrow.UsesDeferredCast);
+        Assert.False(clumsy.UsesDeferredCast);
 
         caster.Delete();
     }
@@ -32,12 +32,12 @@ public class CastInterruptRecastTests
         caster.Mana = 100;
         caster.MoveToWorld(new Point3D(1000, 1000, 0), Map.Felucca);
 
-        var a = new MagicArrowSpell(caster) { State = SpellState.Casting };
+        var a = new ClumsySpell(caster) { State = SpellState.Casting };
         caster.Spell = a;
 
         var manaBeforeCast = caster.Mana;
 
-        var b = new MagicArrowSpell(caster);
+        var b = new ClumsySpell(caster);
         var result = b.Cast();
 
         Assert.True(result);
@@ -66,10 +66,10 @@ public class CastInterruptRecastTests
         target.DefaultMobileInit();
         target.MoveToWorld(new Point3D(1001, 1000, 0), Map.Felucca);
 
-        var a = new MagicArrowSpell(caster) { State = SpellState.Casting };
+        var a = new ClumsySpell(caster) { State = SpellState.Casting };
         caster.Spell = a;
 
-        var b = new MagicArrowSpell(caster);
+        var b = new ClumsySpell(caster);
         b.Cast();
 
         var spellTarget = (SpellTarget<Mobile>)caster.Target;
@@ -101,13 +101,13 @@ public class CastInterruptRecastTests
         target.DefaultMobileInit();
         target.MoveToWorld(new Point3D(1001, 1000, 0), Map.Felucca);
 
-        var a = new MagicArrowSpell(caster) { State = SpellState.Casting };
+        var a = new ClumsySpell(caster) { State = SpellState.Casting };
         caster.Spell = a;
 
         var manaBeforeCast = caster.Mana;
         var aManaCost = a.ScaleMana(a.GetMana());
 
-        var b = new MagicArrowSpell(caster);
+        var b = new ClumsySpell(caster);
         b.Cast();
 
         // Still nothing charged just from pressing B.
@@ -140,17 +140,17 @@ public class CastInterruptRecastTests
         caster.Mana = 100;
         caster.MoveToWorld(new Point3D(1000, 1000, 0), Map.Felucca);
 
-        var a = new MagicArrowSpell(caster) { State = SpellState.Casting };
+        var a = new ClumsySpell(caster) { State = SpellState.Casting };
         caster.Spell = a;
 
         var manaBeforeCast = caster.Mana;
         var aManaCost = a.ScaleMana(a.GetMana());
 
-        var b = new MagicArrowSpell(caster);
+        var b = new ClumsySpell(caster);
         b.Cast(); // B interrupts A - A remembered, not yet charged
         var bManaCost = b.ScaleMana(b.GetMana());
 
-        var c = new MagicArrowSpell(caster);
+        var c = new ClumsySpell(caster);
         c.Cast(); // C interrupts B before B's own target was ever clicked
 
         // B's own click will never come now - its pending obligation to fizzle A, AND B's own
@@ -175,12 +175,12 @@ public class CastInterruptRecastTests
         caster.Mana = 100;
         caster.MoveToWorld(new Point3D(1000, 1000, 0), Map.Felucca);
 
-        var a = new MagicArrowSpell(caster) { State = SpellState.Casting };
+        var a = new ClumsySpell(caster) { State = SpellState.Casting };
         caster.Spell = a;
 
         var manaBeforeCast = caster.Mana;
 
-        var b = new MagicArrowSpell(caster);
+        var b = new ClumsySpell(caster);
         b.Cast(); // B interrupts A - A remembered, not yet charged
 
         // B itself takes a plain hit before ever clicking its own target. Phase 1 isn't really
@@ -209,7 +209,7 @@ public class CastInterruptRecastTests
         caster.Mana = 100;
         caster.MoveToWorld(new Point3D(1000, 1000, 0), Map.Felucca);
 
-        var a = new MagicArrowSpell(caster) { State = SpellState.Casting };
+        var a = new ClumsySpell(caster) { State = SpellState.Casting };
         caster.Spell = a;
 
         var manaBeforeCast = caster.Mana;
@@ -239,7 +239,7 @@ public class CastInterruptRecastTests
 
         var manaBeforeCast = caster.Mana;
 
-        var b = new MagicArrowSpell(caster);
+        var b = new ClumsySpell(caster);
         b.Cast(); // B supersedes A's cursor
 
         // A was never committed to anything of its own - stays free, exactly like the

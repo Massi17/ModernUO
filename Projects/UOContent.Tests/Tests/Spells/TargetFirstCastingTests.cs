@@ -85,7 +85,7 @@ public class TargetFirstCastingTests
         var caster = new Mobile(World.NewMobile);
         caster.DefaultMobileInit();
 
-        var spell = new MagicArrowSpell(caster);
+        var spell = new ClumsySpell(caster);
 
         Assert.Equal(spell.BlocksMovement, spell.BlocksWeaponSwing); // both false: not casting
 
