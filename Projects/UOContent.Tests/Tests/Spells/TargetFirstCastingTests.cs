@@ -1,6 +1,8 @@
+using Server.Items;
 using Server.Spells;
 using Server.Spells.First;
 using Server.Spells.Seventh;
+using Server.Spells.Third;
 using Server.Targeting;
 using Xunit;
 
@@ -193,5 +195,37 @@ public class TargetFirstCastingTests
         spell.Disturb(DisturbType.Kill);
         caster.Delete();
         target.Delete();
+    }
+
+    // Proves the generic target-first engine (SpellTarget<T>'s phase-1/phase-2 machinery)
+    // actually works for T = Item, not just T = Mobile - this is the first spell in this
+    // repo to exercise TargetFirst against an Item target.
+    [Fact]
+    public void MagicLock_TargetFirst_AcceptsAnItemTarget()
+    {
+        var caster = new Mobile(World.NewMobile);
+        caster.DefaultMobileInit();
+        caster.MoveToWorld(new Point3D(1000, 1000, 0), Map.Felucca);
+
+        var chest = new WoodenChest();
+        chest.MoveToWorld(new Point3D(1001, 1000, 0), Map.Felucca);
+
+        var spell = new MagicLockSpell(caster) { State = SpellState.Casting };
+        caster.Spell = spell;
+
+        Assert.True(spell.TargetFirst);
+        Assert.False(spell.BlocksMovement);
+        Assert.False(spell.BlocksWeaponSwing);
+
+        var spellTarget = new SpellTarget<Item>(spell) { CheckLOS = false };
+        caster.Target = spellTarget;
+        spellTarget.Invoke(caster, chest);
+
+        Assert.True(spell.TargetFirstCommitted);
+        Assert.True(spell.BlocksWeaponSwing);
+
+        spell.Disturb(DisturbType.Kill);
+        caster.Delete();
+        chest.Delete();
     }
 }

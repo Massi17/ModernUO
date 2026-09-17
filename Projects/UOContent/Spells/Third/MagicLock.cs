@@ -21,6 +21,14 @@ namespace Server.Spells.Third
 
         public override SpellCircle Circle => SpellCircle.Third;
 
+        public override bool BlocksMovement => false;
+
+        public override bool TargetFirst => true;
+
+        public override bool BlocksWeaponSwing => TargetFirstCommitted;
+
+        public override bool ValidateTargetFirst(object target) => target is LockableContainer;
+
         public void Target(Item item)
         {
             if (item is not LockableContainer cont)
@@ -62,7 +70,7 @@ namespace Server.Spells.Third
 
         public override void OnCast()
         {
-            Caster.Target = new SpellTarget<Item>(this);
+            Caster.Target = new SpellTarget<Item>(this, notifyOnLos: true);
         }
     }
 }
