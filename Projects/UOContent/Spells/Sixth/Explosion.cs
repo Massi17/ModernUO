@@ -37,7 +37,11 @@ namespace Server.Spells.Sixth
                 var defender = m;
 
                 SpellHelper.Turn(Caster, m);
-                SpellHelper.CheckReflect((int)Circle, Caster, ref m);
+
+                if (SpellHelper.CheckReflect((int)Circle, Caster, ref m) == ReflectResult.Vanished)
+                {
+                    return;
+                }
 
                 new InternalTimer(this, Caster, defender, m).Start();
             }

@@ -27,7 +27,10 @@ namespace Server.Spells.Second
             {
                 SpellHelper.Turn(Caster, m);
 
-                SpellHelper.CheckReflect((int)Circle, Caster, ref m);
+                if (SpellHelper.CheckReflect((int)Circle, Caster, ref m) == ReflectResult.Vanished)
+                {
+                    return;
+                }
 
                 double damage;
 

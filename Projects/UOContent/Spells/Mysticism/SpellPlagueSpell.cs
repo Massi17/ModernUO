@@ -39,7 +39,10 @@ public class SpellPlagueSpell : MysticSpell, ITargetingSpell<Mobile>
         {
             SpellHelper.Turn(Caster, m);
 
-            SpellHelper.CheckReflect(6, Caster, ref m);
+            if (SpellHelper.CheckReflect(6, Caster, ref m) == ReflectResult.Vanished)
+            {
+                return;
+            }
 
             /* The target is hit with an explosion of chaos damage and then inflicted
              * with the spell plague curse. Each time the target is damaged while under

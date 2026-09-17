@@ -30,7 +30,10 @@ namespace Server.Spells.Fourth
             {
                 SpellHelper.Turn(Caster, m);
 
-                SpellHelper.CheckReflect((int)Circle, Caster, ref m);
+                if (SpellHelper.CheckReflect((int)Circle, Caster, ref m) == ReflectResult.Vanished)
+                {
+                    return;
+                }
 
                 m.Spell?.OnCasterHurt();
 
