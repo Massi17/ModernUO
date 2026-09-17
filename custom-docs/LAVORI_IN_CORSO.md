@@ -156,3 +156,29 @@ Formato per ogni voce: cosa è stato fatto, cosa manca per chiuderlo, stato attu
   - [ ] Ricasting su un giocatore già scudato → verificare che lo scudo venga silenziosamente rinnovato (sostituito) invece di mostrare il vecchio messaggio "This spell is already in effect"
   - Decisione finale: tenere, aggiustare, o revert
 - **Fuori scope, noto e accettato:** Fire Field/Paralyze Field non riflettono (non passano da `CheckReflect`); le creature non possono ricevere lo scudo; `DuelContext.cs` non resetta il nuovo scudo all'inizio di un duello (stesso gap già accettato per `MagicShieldAbsorb`); l'abilità PvP che userà `PiercesSpellReflect` non è ancora stata costruita.
+
+---
+
+## Cast-in-corsa per il resto del libro del mago
+
+- **Stato:** Implementato, buildato, testato (4 nuovi test automatici che coprono le 4 categorie di bersaglio — Mobile ostile, Mobile amico, Item, terreno/IPoint3D — più il fixture fix su `CastInterruptRecastTests.cs`) — **non ancora verificato in gioco**.
+- **Cosa copre:** 11 spell del libro del mago (Magic Arrow, Fireball, Lightning, Energy Bolt, Poison, Heal, Magic Lock, Unlock, Fire Field, Paralyze Field, Reveal) ottengono lo stesso meccanismo target-first già verificato su Flame Strike e Magic Reflection — mirino immediato, cast libero in movimento, costo/delay solo dal click in poi. Zero modifiche al motore condiviso (`Spell.cs`/`SpellTarget.cs`).
+- **Fatto:**
+  - 11 file spell (elencati in `CUSTOM_CHANGES.md`): stessi quattro membri (`TargetFirst`, `BlocksMovement`, `BlocksWeaponSwing`, `ValidateTargetFirst`) + `notifyOnLos: true`
+  - Fix preventivo: `CastInterruptRecastTests.cs`/`TargetFirstCastingTests.cs` non usano più `MagicArrowSpell` come "spell ordinaria" di riferimento (ora diventata anche lei target-first) — sostituita con `ClumsySpell`
+  - 4 nuovi test in `TargetFirstCastingTests.cs`, uno per categoria di bersaglio mai esercitata prima in modalità target-first (Mobile ostile via Magic Arrow, Mobile amico via Heal, Item via Magic Lock, terreno via Fire Field)
+  - Build e `dotnet test` puliti
+- **Manca (da verificare in gioco, una spell per volta — happy path, rifiuto gratis in fase 1, fallimento addebitato in fase 2, disturbo durante il delay):**
+  - [ ] Magic Arrow
+  - [ ] Fireball
+  - [ ] Lightning
+  - [ ] Energy Bolt
+  - [ ] Poison (in particolare: il livello di veleno dipende dalla distanza misurata a fine delay, non al click — verificare che allontanarsi durante il delay riduca/annulli l'effetto)
+  - [ ] Heal (in particolare: il mirino ora accetta anche bersagli diversi da se stessi durante il movimento)
+  - [ ] Magic Lock (in particolare: mirare un oggetto non-baule non deve costare nulla in fase 1)
+  - [ ] Unlock (in particolare: NON ha `allowGround` — verificare che il terreno vuoto resti un bersaglio non valido, invariato)
+  - [ ] Fire Field
+  - [ ] Paralyze Field
+  - [ ] Reveal
+  - Decisione finale: tenere così, aggiustare, o rivedere qualcosa
+- **Fuori scope, noto e accettato:** Gate Travel resta col pre-cast classico (richiede un secondo `Target` da estendere, non è il pattern già pronto); Magic Reflection è stata gestita a parte (già completata e mergiata).

@@ -58,3 +58,16 @@ Ogni riga qui sotto aiuta, ad ogni sync con l'upstream, a capire quali modifiche
 | `Projects/UOContent/Spells/Mysticism/BombardSpell.cs` | Restructure existing reflect-effect `if` to also skip the whole spell effect on Vanished | 2026-09-17 |
 | `Projects/UOContent/Spells/Mysticism/EagleStrikeSpell.cs` | Restructure existing reflect-effect `if` to also skip the whole spell effect on Vanished | 2026-09-17 |
 | `Projects/UOContent/Items/Talismans/BaseTalisman.cs` | Ward talisman removal (`TalismanRemoval.Ward`) now calls `SpellReflect.Clear(target)` instead of the deleted `MagicReflectSpell.EndReflect(target)` — direct semantic equivalent under the redesigned reflect shield (controller ruling during Task 4, fixing a plan defect: a deleted public static method was still referenced here) | 2026-09-17 |
+| `Projects/UOContent/Spells/First/MagicArrow.cs` | Add target-first casting (cursor appears immediately, cast delay/cost commits on target click) — part of extending the mechanism across the mage's spellbook | 2026-09-17 |
+| `Projects/UOContent/Spells/Third/Fireball.cs` | Add target-first casting | 2026-09-17 |
+| `Projects/UOContent/Spells/Fourth/Lightning.cs` | Add target-first casting | 2026-09-17 |
+| `Projects/UOContent/Spells/Sixth/EnergyBolt.cs` | Add target-first casting | 2026-09-17 |
+| `Projects/UOContent/Spells/Third/Poison.cs` | Add target-first casting | 2026-09-17 |
+| `Projects/UOContent/Spells/First/Heal.cs` | Add target-first casting (beneficial-Mobile variant, ValidateTargetFirst uses CanBeBeneficial) | 2026-09-17 |
+| `Projects/UOContent/Spells/Third/MagicLock.cs` | Add target-first casting (Item-target variant, first spell to exercise the generic engine against T = Item) | 2026-09-17 |
+| `Projects/UOContent/Spells/Third/Unlock.cs` | Add target-first casting (ground/IPoint3D variant, no allowGround since bare ground was never a valid target for this spell) | 2026-09-17 |
+| `Projects/UOContent/Spells/Fourth/FireField.cs` | Add target-first casting (ground/IPoint3D variant, allowGround: true) | 2026-09-17 |
+| `Projects/UOContent/Spells/Sixth/ParalyzeField.cs` | Add target-first casting (ground/IPoint3D variant, allowGround: true) | 2026-09-17 |
+| `Projects/UOContent/Spells/Sixth/Reveal.cs` | Add target-first casting (ground/IPoint3D variant, allowGround: true) | 2026-09-17 |
+| `Projects/UOContent.Tests/Tests/Spells/CastInterruptRecastTests.cs` | Swap MagicArrowSpell for ClumsySpell as the "ordinary spell" test fixture — MagicArrowSpell became target-first as part of this feature | 2026-09-17 |
+| `Projects/UOContent.Tests/Tests/Spells/TargetFirstCastingTests.cs` | Same fixture swap, plus 4 new tests covering the harmful/beneficial-Mobile, Item, and ground/IPoint3D target-first categories | 2026-09-17 |
