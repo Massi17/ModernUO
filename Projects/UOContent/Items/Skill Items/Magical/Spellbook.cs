@@ -273,11 +273,19 @@ public partial class Spellbook : Item, ICraftable, ISlayer, IAosItem
             return; // They are customizing
         }
 
-        var book = Find(from, spellId);
+        var book = Find(from, spellId, GetTypeForSpell(spellId), out var requiresEquip);
 
         if (book?.HasSpell(spellId) != true)
         {
-            from.SendLocalizedMessage(500015); // You do not have that spell!
+            if (requiresEquip)
+            {
+                from.SendMessage("You must have your spellbook equipped to cast that spell.");
+            }
+            else
+            {
+                from.SendLocalizedMessage(500015); // You do not have that spell!
+            }
+
             return;
         }
 
@@ -309,10 +317,11 @@ public partial class Spellbook : Item, ICraftable, ISlayer, IAosItem
         }
 
         var book = item as Spellbook;
+        var requiresEquip = false;
 
         if (book?.HasSpell(spellID) != true)
         {
-            book = Find(from, spellID);
+            book = Find(from, spellID, GetTypeForSpell(spellID), out requiresEquip);
         }
 
         if (book?.HasSpell(spellID) == true)
@@ -336,6 +345,10 @@ public partial class Spellbook : Item, ICraftable, ISlayer, IAosItem
                     from.SendLocalizedMessage(502345); // This spell has been temporarily disabled.
                 }
             }
+        }
+        else if (requiresEquip)
+        {
+            from.SendMessage("You must have your spellbook equipped to cast that spell.");
         }
         else
         {
@@ -399,8 +412,16 @@ public partial class Spellbook : Item, ICraftable, ISlayer, IAosItem
 
     public static Spellbook Find(Mobile from, int spellID) => Find(from, spellID, GetTypeForSpell(spellID));
 
-    public static Spellbook Find(Mobile from, int spellID, SpellbookType type)
+    public static Spellbook Find(Mobile from, int spellID, SpellbookType type) =>
+        Find(from, spellID, type, out _);
+
+    // requiresEquip: true only when the sole reason no book was returned is that a book with this
+    // spell exists in the backpack but its RequiresEquipToCast wasn't satisfied - lets callers
+    // send a specific "equip your spellbook" message instead of the generic "no such spell" one.
+    public static Spellbook Find(Mobile from, int spellID, SpellbookType type, out bool requiresEquip)
     {
+        requiresEquip = false;
+
         if (from == null)
         {
             return null;
@@ -423,20 +444,26 @@ public partial class Spellbook : Item, ICraftable, ISlayer, IAosItem
             searchAgain = true;
         }
 
-        var book = FindSpellbookInList(list, from, spellID, type);
+        var book = FindSpellbookInList(list, from, spellID, type, out requiresEquip);
 
         if (book == null && searchAgain)
         {
             _table[from] = list = FindAllSpellbooks(from);
 
-            book = FindSpellbookInList(list, from, spellID, type);
+            book = FindSpellbookInList(list, from, spellID, type, out requiresEquip);
         }
 
         return book;
     }
 
-    public static Spellbook FindSpellbookInList(List<Spellbook> list, Mobile from, int spellID, SpellbookType type)
+    public static Spellbook FindSpellbookInList(List<Spellbook> list, Mobile from, int spellID, SpellbookType type) =>
+        FindSpellbookInList(list, from, spellID, type, out _);
+
+    public static Spellbook FindSpellbookInList(
+        List<Spellbook> list, Mobile from, int spellID, SpellbookType type, out bool requiresEquip
+    )
     {
+        requiresEquip = false;
         var pack = from.Backpack;
 
         for (var i = list.Count - 1; i >= 0; --i)
@@ -453,6 +480,12 @@ public partial class Spellbook : Item, ICraftable, ISlayer, IAosItem
                 ValidateSpellbook(book, spellID, type))
             {
                 return book;
+            }
+
+            if (!book.Deleted && book.RequiresEquipToCast && book.Parent == pack &&
+                ValidateSpellbook(book, spellID, type))
+            {
+                requiresEquip = true;
             }
 
             list.RemoveAt(i);
